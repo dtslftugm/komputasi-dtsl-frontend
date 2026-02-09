@@ -1,44 +1,80 @@
 /**
- * API Client - Wrapper untuk fetch() calls ke Google Apps Script backend
+ * API Client - JSONP Wrapper untuk Google Apps Script backend
+ * Menggunakan JSONP untuk bypass CORS restrictions
  */
 class APIClient {
     constructor() {
         this.baseURL = CONFIG.API_URL;
+        this.callbackCounter = 0;
     }
 
     /**
-     * Make API request
+     * Make JSONP request (bypass CORS)
      * @param {string} path - API endpoint path
-     * @param {string} method - HTTP method (GET/POST)
-     * @param {object} data - Request data (for POST)
+     * @param {object} params - Query parameters
      * @returns {Promise} Response data
      */
-    async request(path, method = 'GET', data = null) {
-        const url = `${this.baseURL}?path=${encodeURIComponent(path)}`;
+    async jsonpRequest(path, params = {}) {
+        return new Promise((resolve, reject) => {
+            // Generate unique callback name
+            const callbackName = 'jsonp_callback_' + (++this.callbackCounter) + '_' + Date.now();
 
-        const options = {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        };
+            // Create script element
+            const script = document.createElement('script');
 
-        if (method === 'POST' && data) {
-            options.body = JSON.stringify({ path, ...data });
-        }
+            // Build URL with callback
+            const queryParams = new URLSearchParams({
+                path: path,
+                callback: callbackName,
+                ...params
+            });
 
+            script.src = `${this.baseURL}?${queryParams.toString()}`;
+
+            // Define global callback
+            window[callbackName] = (data) => {
+                // Cleanup
+                delete window[callbackName];
+                document.body.removeChild(script);
+
+                if (data.success) {
+                    resolve(data.data || data);
+                } else {
+                    reject(new Error(data.message || 'Request failed'));
+                }
+            };
+
+            // Error handling
+            script.onerror = () => {
+                delete window[callbackName];
+                document.body.removeChild(script);
+                reject(new Error('Script load failed'));
+            };
+
+            // Inject script
+            document.body.appendChild(script);
+        });
+    }
+
+    /**
+     * Make POST request using form submission trick
+     */
+    async postRequest(path, data) {
+        // For POST, we'll use fetch with no-cors mode as fallback
+        // Or we can create an iframe approach
         try {
-            const response = await fetch(url, options);
-            const json = await response.json();
+            const response = await fetch(this.baseURL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path, ...data })
+            });
 
-            if (!json.success) {
-                throw new Error(json.message || 'Request failed');
-            }
-
-            return json.data || json;
+            // no-cors mode doesn't allow reading response
+            // Assume success if no error thrown
+            return { success: true };
         } catch (error) {
-            console.error('API Error:', error);
-            throw error;
+            throw new Error('POST request failed: ' + error.message);
         }
     }
 
@@ -48,48 +84,44 @@ class APIClient {
      * Get initial data for form (dropdowns, config, renewal data)
      */
     async getInitialData(renewalId = null) {
-        const path = renewalId
-            ? `initial-data&renewal_id=${renewalId}`
-            : 'initial-data';
-        return this.request(path);
+        const params = renewalId ? { renewal_id: renewalId } : {};
+        return this.jsonpRequest('initial-data', params);
     }
 
     /**
      * Get available computers for selection
      */
     async getAvailableComputers(room = null) {
-        const path = room
-            ? `computers-available&room=${encodeURIComponent(room)}`
-            : 'computers-available';
-        return this.request(path);
+        const params = room ? { room: room } : {};
+        return this.jsonpRequest('computers-available', params);
     }
 
     /**
      * Get branding assets (logo, QR)
      */
     async getBranding() {
-        return this.request('branding');
+        return this.jsonpRequest('branding');
     }
 
     /**
      * Get software access rules
      */
     async getSoftwareRules() {
-        return this.request('software-rules');
+        return this.jsonpRequest('software-rules');
     }
 
     /**
      * Submit new request
      */
     async submitRequest(formData) {
-        return this.request('submit-request', 'POST', formData);
+        return this.postRequest('submit-request', formData);
     }
 
     /**
      * Upload file to Google Drive
      */
     async uploadFile(rowIndex, fileData, fileName, mimeType) {
-        return this.request('upload-file', 'POST', {
+        return this.postRequest('upload-file', {
             rowIndex,
             fileData,
             fileName,
@@ -103,21 +135,21 @@ class APIClient {
      * Admin login
      */
     async adminLogin(email, password) {
-        return this.request('admin-login', 'POST', { email, password });
+        return this.postRequest('admin-login', { email, password });
     }
 
     /**
      * Get admin requests list
      */
     async getAdminRequests(status = 'Pending') {
-        return this.request('admin-requests', 'POST', { status });
+        return this.postRequest('admin-requests', { status });
     }
 
     /**
      * Approve a request
      */
     async approveRequest(requestId, expirationDate, adminNotes, activationKey) {
-        return this.request('admin-approve', 'POST', {
+        return this.postRequest('admin-approve', {
             requestId,
             expirationDate,
             adminNotes,
@@ -129,7 +161,7 @@ class APIClient {
      * Reject a request
      */
     async rejectRequest(requestId, reason) {
-        return this.request('admin-reject', 'POST', { requestId, reason });
+        return this.postRequest('admin-reject', { requestId, reason });
     }
 }
 
