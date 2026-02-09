@@ -18,7 +18,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         // Load initial data from API
         initialData = await api.getInitialData();
-        console.log('Initial Data:', initialData);
+        console.log('Initial Data received:', initialData);
+        console.log('Has logoUrl?', initialData?.logoUrl !== undefined);
+        console.log('Has qrUrl?', initialData?.qrUrl !== undefined);
+        console.log('Has prodiList?', initialData?.prodiList !== undefined);
 
         // Setup UI Components
         setupThemeToggle();
@@ -36,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         hideLoading();
     } catch (error) {
         console.error('Initialization error:', error);
+        console.error('Error stack:', error.stack);
         hideLoading();
         alert('Gagal memuat data. Silakan refresh halaman.');
     }
@@ -45,16 +49,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 function setupBranding() {
     if (!initialData) return;
 
-    // Set logo
+    // Set logo (use placeholder if not provided by API)
     const logo = document.getElementById('app-logo');
-    if (logo && initialData.logoUrl) {
-        logo.src = initialData.logoUrl;
+    if (logo) {
+        logo.src = initialData.logoUrl || 'https://tsipil.ugm.ac.id/wp-content/uploads/sites/1731/2022/10/Logo-DTSL-1.png';
     }
 
-    // Set QR code
+    // Set QR code (use placeholder if not provided)
     const qr = document.getElementById('app-qr');
-    if (qr && initialData.qrUrl) {
-        qr.src = initialData.qrUrl;
+    if (qr) {
+        qr.src = initialData.qrUrl || 'https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://dtslftugm.github.io/komputasi-dtsl-frontend/';
     }
 }
 
