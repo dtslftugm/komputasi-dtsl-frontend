@@ -52,13 +52,13 @@ function setupBranding() {
     // Set logo (use placeholder if not provided by API)
     const logo = document.getElementById('app-logo');
     if (logo) {
-        logo.src = initialData.logoUrl || 'https://tsipil.ugm.ac.id/wp-content/uploads/sites/1731/2022/10/Logo-DTSL-1.png';
+        logo.src = initialData.logoUrl || '';
     }
 
     // Set QR code (use placeholder if not provided)
     const qr = document.getElementById('app-qr');
     if (qr) {
-        qr.src = initialData.qrUrl || 'https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://dtslftugm.github.io/komputasi-dtsl-frontend/';
+        qr.src = initialData.qrUrl || '';
     }
 }
 
