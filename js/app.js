@@ -47,18 +47,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ===== BRANDING =====
 function setupBranding() {
-    if (!initialData) return;
-
-    // Set logo (use placeholder if not provided by API)
-    const logo = document.getElementById('app-logo');
-    if (logo) {
-        logo.src = initialData.logoUrl || '';
+    // Defensive check - if initialData is null/undefined, skip
+    if (!initialData) {
+        console.warn('setupBranding: initialData is not available');
+        return;
     }
 
-    // Set QR code (use placeholder if not provided)
+    console.log('setupBranding called');
+    console.log('logoUrl:', initialData.logoUrl ? 'present (length: ' + initialData.logoUrl.length + ')' : 'EMPTY');
+    console.log('qrUrl:', initialData.qrUrl ? 'present (length: ' + initialData.qrUrl.length + ')' : 'EMPTY');
+
+    // Set logo (use empty if not provided by API)
+    const logo = document.getElementById('app-logo');
+    if (logo) {
+        if (initialData.logoUrl && initialData.logoUrl.trim()) {
+            logo.src = initialData.logoUrl;
+            console.log('✅ Logo set successfully');
+        } else {
+            console.warn('⚠️ Logo URL is empty or invalid');
+        }
+    } else {
+        console.error('❌ Logo element #app-logo not found in DOM');
+    }
+
+    // Set QR code (use empty if not provided)
     const qr = document.getElementById('app-qr');
     if (qr) {
-        qr.src = initialData.qrUrl || '';
+        if (initialData.qrUrl && initialData.qrUrl.trim()) {
+            qr.src = initialData.qrUrl;
+            console.log('✅ QR set successfully');
+        } else {
+            console.warn('⚠️ QR URL is empty or invalid');
+        }
+    } else {
+        console.error('❌ QR element #app-qr not found in DOM');
     }
 }
 
@@ -142,6 +164,7 @@ function handleProdiChange() {
 async function setupDosenDropdown() {
     try {
         // Get dosen list from initialData
+        // Now returns array of {inisial, nama} objects
         if (initialData && initialData.dosenList) {
             dosenList = initialData.dosenList;
         }
@@ -150,8 +173,14 @@ async function setupDosenDropdown() {
         select.empty();
         select.append(new Option('-- Pilih Dosen --', ''));
 
+        // Display nama, but value is inisial
         dosenList.forEach(dosen => {
-            select.append(new Option(dosen, dosen));
+            if (typeof dosen === 'object' && dosen.nama && dosen.inisial) {
+                select.append(new Option(dosen.nama, dosen.inisial));
+            } else if (typeof dosen === 'string') {
+                // Fallback for old format
+                select.append(new Option(dosen, dosen));
+            }
         });
 
         // Initialize Select2
