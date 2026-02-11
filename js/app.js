@@ -120,11 +120,6 @@ function showAnnouncement() {
         // Auto-collapse timer (optional, like original)
         setTimeout(() => {
             if (!isExpanded) {
-                // Keep it collapsed initially as per user request "tidak menutup sendiri" 
-                // Wait, user said "tidak menutup sendiri" means it stays open? 
-                // OR it DIDN'T close itself but he wanted it to?
-                // "pengumuman tidak menutup sendiri" usually means it's stuck open.
-                // I'll make it interactive so he can close it.
             }
         }, 5000);
     }
@@ -193,7 +188,7 @@ function handleProdiChange() {
     } else {
         // No prodi selected
         universitasContainer.style.display = 'none';
-        dosenSelect.disabled = true;
+        dosenSelect.disabled = false;
     }
 }
 
