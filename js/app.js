@@ -267,6 +267,72 @@ async function setupSoftwareSelect() {
     }
 }
 
+// ===== SOFTWARE RESTRICIONS LOGIC (Client-side for 0 Latency) =====
+function checkSoftwareRestrictionsClient(softwareStr) {
+    if (!softwareStr) return { requiresLab: false, requiresNetwork: false, needsBorrowKey: false, allowedRooms: [], success: true };
+
+    // softwareRules is already a global variable in app.js
+    const rules = softwareRules || {};
+    const softwareArray = softwareStr.split(',').map(s => s.trim());
+    const physicalRooms = ['Ruang Penelitian', 'Ruang Komputer 1', 'Ruang Komputer 2'];
+
+    let requiresLabTotal = false;
+    let requiresNetworkTotal = false;
+    let needsBorrowKey = false;
+    let commonAllowedRooms = [...physicalRooms];
+    let isRestricted = false;
+
+    softwareArray.forEach(swName => {
+        let swRules = null;
+        if (rules[swName]) {
+            swRules = rules[swName];
+        } else {
+            const lowerSwName = swName.toLowerCase();
+            for (const [key, allowedTypes] of Object.entries(rules)) {
+                const lowerKey = key.toLowerCase();
+                if (lowerSwName.includes(lowerKey) || lowerKey.includes(lowerSwName)) {
+                    swRules = allowedTypes;
+                    break;
+                }
+            }
+        }
+
+        if (swRules) {
+            const hasCloud = swRules.some(type => type.toLowerCase().includes('cloud license'));
+            const hasServer = swRules.some(type => type.toLowerCase().includes('lisensi server'));
+            const hasBorrow = swRules.some(type => type.toLowerCase().includes('borrow license'));
+
+            if (hasBorrow) needsBorrowKey = true;
+
+            if (!hasCloud && !hasServer && !hasBorrow) {
+                requiresLabTotal = true;
+            }
+            if (!hasCloud && !hasBorrow && hasServer) {
+                requiresNetworkTotal = true;
+            }
+
+            const swPhysicalRooms = swRules.filter(t =>
+                physicalRooms.some(pr => t.toLowerCase().includes(pr.toLowerCase()))
+            );
+
+            if (swPhysicalRooms.length > 0) {
+                isRestricted = true;
+                commonAllowedRooms = commonAllowedRooms.filter(r =>
+                    swPhysicalRooms.some(spr => spr.toLowerCase().includes(r.toLowerCase()))
+                );
+            }
+        }
+    });
+
+    return {
+        requiresLab: requiresLabTotal,
+        requiresNetwork: requiresNetworkTotal,
+        needsBorrowKey: needsBorrowKey,
+        allowedRooms: isRestricted ? commonAllowedRooms : physicalRooms,
+        success: commonAllowedRooms.length > 0
+    };
+}
+
 async function handleSoftwareChange() {
     const selectedSoftware = $('#software').val() || [];
     const warningDiv = document.getElementById('labOnlyWarning');
@@ -274,46 +340,45 @@ async function handleSoftwareChange() {
     const roomSelect = document.getElementById('roomPreference');
 
     if (selectedSoftware.length > 0) {
-        try {
-            const result = await api.checkSoftwareRestrictions(selectedSoftware.join(', '));
-            const { requiresLab, requiresNetwork, allowedRooms = [] } = result;
+        // Perform Instant Check locally (Zero Latency)
+        const result = checkSoftwareRestrictionsClient(selectedSoftware.join(', '));
+        const { requiresLab, requiresNetwork, allowedRooms = [] } = result;
 
-            if (requiresLab) {
-                warningDiv.classList.remove('d-none');
-                warningText.innerHTML = `<strong>Wajib di Lab:</strong> Software ini hanya tersedia di komputer laboratorium DTSL. Anda wajib memilih unit komputer di bawah ini.`;
+        if (requiresLab) {
+            warningDiv.classList.remove('d-none');
+            warningText.innerHTML = `<strong>Wajib di Lab:</strong> Software ini hanya tersedia di komputer laboratorium DTSL. Anda wajib memilih unit komputer di bawah ini.`;
 
-                const needsComputerYes = document.getElementById('needsComputerYes');
-                const needsComputerNo = document.getElementById('needsComputerNo');
+            const needsComputerYes = document.getElementById('needsComputerYes');
+            const needsComputerNo = document.getElementById('needsComputerNo');
 
-                if (needsComputerYes) needsComputerYes.checked = true;
-                if (needsComputerNo) needsComputerNo.disabled = true;
+            if (needsComputerYes) needsComputerYes.checked = true;
+            if (needsComputerNo) needsComputerNo.disabled = true;
 
-                // Show computer section
-                const computerSection = document.getElementById('computer-section');
-                if (computerSection) computerSection.style.display = 'block';
+            const computerSection = document.getElementById('computer-section');
+            if (computerSection) computerSection.style.display = 'block';
 
-            } else if (result.needsBorrowKey) {
-                warningDiv.classList.remove('d-none');
-                warningText.innerHTML = `<strong>Borrow License:</strong> Software ini dapat diinstal di laptop pribadi, namun Anda memerlukan Borrow Key yang akan dikirim via email.`;
-                document.getElementById('needsComputerNo').disabled = false;
-            } else if (requiresNetwork) {
-                warningDiv.classList.remove('d-none');
-                warningText.innerHTML = `<strong>Info Jaringan:</strong> Gunakan VPN UGM atau koneksi internal UGM untuk mengaktifkan lisensi software ini di laptop pribadi.`;
-                document.getElementById('needsComputerNo').disabled = false;
-            } else {
-                warningDiv.classList.add('d-none');
-                document.getElementById('needsComputerNo').disabled = false;
-            }
-
-            // Filter available rooms
-            Array.from(roomSelect.options).forEach(opt => {
-                if (opt.value === '') return;
-                opt.disabled = allowedRooms.length > 0 && !allowedRooms.includes(opt.value);
-            });
-
-        } catch (error) {
-            console.error('Error checking software restrictions:', error);
+        } else if (result.needsBorrowKey) {
+            warningDiv.classList.remove('d-none');
+            warningText.innerHTML = `<strong>Borrow License:</strong> Software ini dapat diinstal di laptop pribadi, namun Anda memerlukan Borrow Key yang akan dikirim via email.`;
+            document.getElementById('needsComputerNo').disabled = false;
+        } else if (requiresNetwork) {
+            warningDiv.classList.remove('d-none');
+            warningText.innerHTML = `<strong>Info Jaringan:</strong> Gunakan VPN UGM atau koneksi internal UGM untuk mengaktifkan lisensi software ini di laptop pribadi.`;
+            document.getElementById('needsComputerNo').disabled = false;
+        } else {
+            warningDiv.classList.add('d-none');
+            document.getElementById('needsComputerNo').disabled = false;
         }
+
+        Array.from(roomSelect.options).forEach(opt => {
+            if (opt.value === '') return;
+            opt.disabled = allowedRooms.length > 0 && !allowedRooms.includes(opt.value);
+        });
+
+        if (result.success === false) {
+            alert('Peringatan: Software yang Anda pilih memiliki batasan akses yang tidak kompatibel.');
+        }
+
     } else {
         warningDiv.classList.add('d-none');
         Array.from(roomSelect.options).forEach(opt => opt.disabled = false);
