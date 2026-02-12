@@ -374,14 +374,69 @@ async function handleSoftwareChange() {
             if (opt.value === '') return;
             opt.disabled = allowedRooms.length > 0 && !allowedRooms.includes(opt.value);
         });
-
         if (result.success === false) {
             alert('Peringatan: Software yang Anda pilih memiliki batasan akses yang tidak kompatibel.');
         }
 
+        // Calibrate Tipe Akses
+        autoSetTipeAkses();
+
     } else {
         warningDiv.classList.add('d-none');
         Array.from(roomSelect.options).forEach(opt => opt.disabled = false);
+        document.getElementById('tipeAkses').value = '';
+    }
+}
+
+function autoSetTipeAkses() {
+    const selectedSoftware = $('#software').val() || [];
+    const needsComputer = document.getElementById('needsComputerYes').checked;
+    const selectedRoom = document.getElementById('roomPreference').value;
+
+    if (selectedSoftware.length === 0) {
+        document.getElementById('tipeAkses').value = '';
+        handleTipeAksesChange();
+        return;
+    }
+
+    let hasAnyServerRule = false;
+    selectedSoftware.forEach(swName => {
+        const lowerSwName = swName.toLowerCase();
+        let swRules = [];
+        for (const [key, allowedTypes] of Object.entries(softwareRules)) {
+            const lowerKey = key.toLowerCase();
+            if (lowerSwName.includes(lowerKey) || lowerKey.includes(lowerSwName)) {
+                swRules = allowedTypes;
+                break;
+            }
+        }
+        if (swRules.some(t => t.toLowerCase().includes('lisensi server'))) {
+            hasAnyServerRule = true;
+        }
+    });
+
+    let accessType = '';
+    if (needsComputer && selectedRoom) {
+        accessType = selectedRoom;
+    } else if (hasAnyServerRule && !needsComputer) {
+        accessType = 'Akses Lisensi Server';
+    } else {
+        // Fallback or generic logic
+        accessType = 'Lisensi / Cloud';
+    }
+
+    document.getElementById('tipeAkses').value = accessType;
+    handleTipeAksesChange();
+}
+
+function handleTipeAksesChange() {
+    const tipeAkses = document.getElementById('tipeAkses').value;
+    const isServer = tipeAkses === 'Akses Lisensi Server';
+    const serverFields = document.getElementById('serverAccessFields');
+    if (serverFields) {
+        serverFields.style.display = isServer ? 'block' : 'none';
+        document.getElementById('computerUserName').required = isServer;
+        document.getElementById('computerHostname').required = isServer;
     }
 }
 
@@ -436,11 +491,20 @@ function setupComputerToggle() {
         }
     }
 
-    needsComputerYes.addEventListener('change', toggleComputer);
-    needsComputerNo.addEventListener('change', toggleComputer);
+    needsComputerYes.addEventListener('change', () => {
+        toggleComputer();
+        autoSetTipeAkses();
+    });
+    needsComputerNo.addEventListener('change', () => {
+        toggleComputer();
+        autoSetTipeAkses();
+    });
 
     // Room change listener
-    roomPreference.addEventListener('change', loadAvailableComputers);
+    roomPreference.addEventListener('change', () => {
+        loadAvailableComputers();
+        autoSetTipeAkses();
+    });
 
     // Search listener
     computerSearch.addEventListener('input', filterComputers);
@@ -634,7 +698,10 @@ function collectFormData() {
         catatan: document.getElementById('catatan').value,
         uploadMethod: document.querySelector('input[name="uploadMethod"]:checked')?.value,
         linkSurat: document.getElementById('linkSurat').value,
-        isRenewal: false, // Default for new standalone requests
+        tipeAkses: document.getElementById('tipeAkses').value,
+        computerUserName: document.getElementById('computerUserName')?.value || '',
+        computerHostname: document.getElementById('computerHostname')?.value || '',
+        isRenewal: false,
         previousRequestId: ""
     };
 }
