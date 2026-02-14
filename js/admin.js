@@ -11,6 +11,7 @@ let sessionToken = localStorage.getItem('adminAuthToken');
 document.addEventListener('DOMContentLoaded', () => {
     setupUI();
     validateSession();
+    loadAppBranding(); // Milestone 11 Branding
 
     // Login Form Handler
     const loginForm = document.getElementById('login-form');
@@ -34,9 +35,9 @@ async function validateSession() {
     }
 
     try {
-        const res = await api.postRequest('admin-check-auth', { token: sessionToken });
-        if (res.authenticated) {
-            currentUser = res.user;
+        const res = await api.checkAuth(sessionToken); // Gunakan method yang sesuai
+        if (res.success && res.data && res.data.authenticated) {
+            currentUser = res.data.user;
             showDashboard();
         } else {
             handleLogoutAction();
@@ -55,10 +56,10 @@ async function handleLogin(e) {
     showLoading("Autentikasi...");
     try {
         const res = await api.adminLogin(email, pass);
-        if (res.success) {
-            localStorage.setItem('adminAuthToken', res.token);
-            sessionToken = res.token;
-            currentUser = res.user;
+        if (res.success && res.data) {
+            localStorage.setItem('adminAuthToken', res.data.token);
+            sessionToken = res.data.token;
+            currentUser = res.data.user;
             showDashboard();
         } else {
             alert("Login Gagal: " + (res.message || "Email atau password salah"));
@@ -155,9 +156,46 @@ function renderTable(filter = '') {
 }
 
 // Global functions for UI
-window.handleLogout = handleLogout;
 window.loadRequests = loadRequests;
 window.openProcessModal = (id) => alert("Fitur proses detail (modal) akan menyusul di versi berikutnya.");
+
+/**
+ * --- BRANDING LOGIC (Milestone 11) ---
+ */
+async function loadAppBranding() {
+    try {
+        const res = await api.getBranding();
+        if (res.success && res.data) {
+            setupBranding(res.data);
+        }
+    } catch (e) {
+        console.warn('Error loading branding:', e);
+    }
+}
+
+function setupBranding(data) {
+    if (!data) return;
+
+    // Set logos
+    const logoEls = document.querySelectorAll('#app-logo, #login-logo');
+    if (data.logo) {
+        let logoSrc = data.logo;
+        if (logoSrc.trim() && !logoSrc.startsWith('http') && !logoSrc.startsWith('data:')) {
+            logoSrc = 'data:image/png;base64,' + logoSrc;
+        }
+        logoEls.forEach(el => { el.src = logoSrc; });
+    }
+
+    // Set QR code (optional for admin but kept for consistency)
+    const qrEl = document.getElementById('app-qr');
+    if (data.qr && qrEl) {
+        let qrSrc = data.qr;
+        if (qrSrc.trim() && !qrSrc.startsWith('http') && !qrSrc.startsWith('data:')) {
+            qrSrc = 'data:image/png;base64,' + qrSrc;
+        }
+        qrEl.src = qrSrc;
+    }
+}
 
 // Loading UI Helpers
 function showLoading(text) {

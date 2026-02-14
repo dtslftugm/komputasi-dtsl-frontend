@@ -37,10 +37,8 @@ class APIClient {
                 delete window[callbackName];
                 document.body.removeChild(script);
 
-                // API returns { success: true/false, data: {...} } or { success: false, message: "..." }
-                // We handle both legacy direct-return and new standard-wrapped formats
                 if (response.success) {
-                    resolve(response.data !== undefined ? response.data : response);
+                    resolve(response); // Selalu kembalikan objek lengkap agar pemanggil bisa akses .stats, etc.
                 } else {
                     reject(new Error(response.message || 'Request failed'));
                 }
