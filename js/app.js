@@ -19,8 +19,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Load initial data from API
         initialData = await api.getInitialData();
         console.log('Initial Data received:', initialData);
-        console.log('Has logoUrl?', initialData?.logoUrl !== undefined);
-        console.log('Has qrUrl?', initialData?.qrUrl !== undefined);
+        console.log('Has logo?', initialData?.logo !== undefined);
+        console.log('Has qr?', initialData?.qr !== undefined);
         console.log('Has prodiList?', initialData?.prodiList !== undefined);
 
         // Setup UI Components
@@ -57,8 +57,8 @@ function setupBranding() {
     }
 
     console.log('setupBranding called');
-    console.log('logoUrl:', initialData.logoUrl ? 'present (length: ' + initialData.logoUrl.length + ')' : 'EMPTY');
-    console.log('qrUrl:', initialData.qrUrl ? 'present (length: ' + initialData.qrUrl.length + ')' : 'EMPTY');
+    console.log('logo:', initialData.logo ? 'present (length: ' + initialData.logo.length + ')' : 'EMPTY');
+    console.log('qr:', initialData.qr ? 'present (length: ' + initialData.qr.length + ')' : 'EMPTY');
 
     // Set logo
     const logo = document.getElementById('app-logo');

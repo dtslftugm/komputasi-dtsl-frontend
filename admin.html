@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Layanan Laboratorium DTSL</title>
+
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Google Fonts: Inter & Outfit -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #0d6efd;
+            --secondary: #6c757d;
+            --success: #198754;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #0dcaf0;
+            --bg-body: #f4f7f6;
+            --text-main: #2d3436;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --border-color: #e9ecef;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            padding-top: 30px;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+
+        .sidebar {
+            width: 280px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: #ffffff;
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 1001;
+            transition: transform 0.3s ease;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+            transition: margin-left 0.3s ease;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        .nav-link {
+            color: var(--secondary);
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: rgba(13, 110, 253, 0.1);
+            color: var(--primary);
+        }
+
+        /* Loading Overlay Custom */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Global UI Elements -->
+    <div id="loading-overlay">
+        <div class="spinner-border text-primary mb-3" role="status"></div>
+        <h5 id="loading-text" class="outfit fw-bold">Memuat...</h5>
+    </div>
+
+    <!-- Login Container -->
+    <div id="login-container" style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+        <div class="card p-5 shadow-lg" style="width: 100%; max-width: 400px; border-radius: 24px;">
+            <div class="text-center mb-4">
+                <img id="login-logo" src="" alt="DTSL Logo" class="mb-3" style="max-height: 80px;">
+                <h3 class="fw-bold outfit">Admin Central</h3>
+                <p class="text-muted small">Layanan Komputasi DTSL FT UGM</p>
+            </div>
+            <form id="login-form">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Email Admin</label>
+                    <input type="email" id="login-email" class="form-control rounded-pill px-3" required
+                        placeholder="name@ugm.ac.id">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label small fw-bold">Password</label>
+                    <input type="password" id="login-password" class="form-control rounded-pill px-3" required
+                        placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold py-2">Masuk ke
+                    Dashboard</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard App Content -->
+    <div id="dashboard-app" style="display: none;">
+        <aside class="sidebar" id="sidebar">
+            <div class="mb-4 text-center">
+                <img id="app-logo" src="" alt="Logo" class="img-fluid rounded mb-3" style="max-height: 60px;">
+                <h5 class="fw-bold mb-0 outfit">Komputasi DTSL</h5>
+            </div>
+            <nav class="flex-column">
+                <a href="#" class="nav-link active" onclick="showSection('dashboard'); return false;">🏠 Dashboard</a>
+                <a href="#" class="nav-link" onclick="openAgendaModal(); return false;">📅 Agenda Lab</a>
+                <a href="#" class="nav-link" onclick="loadRequests(); return false;">🔄 Refresh Data</a>
+            </nav>
+            <div class="mt-auto pt-4 border-top">
+                <div class="mb-3 small d-flex align-items-center">
+                    <div class="bg-primary text-white rounded-circle me-2 d-flex align-items-center justify-content-center"
+                        style="width: 32px; height: 32px;">👤</div>
+                    <span id="user-display-name" class="fw-bold">Admin</span>
+                </div>
+                <button class="btn btn-outline-danger btn-sm w-100 rounded-pill fw-bold" onclick="handleLogout()">🚪
+                    Logout</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold mb-0 outfit">Overview Dashboard</h2>
+                <div class="d-lg-none">
+                    <button class="btn btn-white shadow-sm"
+                        onclick="document.getElementById('sidebar').classList.toggle('show')">☰</button>
+                </div>
+            </header>
+
+            <!-- Stats Grid -->
+            <div class="row g-4 mb-5">
+                <div class="col-md">
+                    <div class="card p-4 text-center" style="border-left: 5px solid #0d6efd;">
+                        <h6 class="text-muted mb-2">Permohonan Baru</h6>
+                        <div id="count-pending" class="display-5 fw-bold text-primary">--</div>
+                    </div>
+                </div>
+                <div class="col-md">
+                    <div class="card p-4 text-center" style="border-left: 5px solid #dc3545;">
+                        <h6 class="text-muted mb-2">Butuh Revoke</h6>
+                        <div id="count-expired" class="display-5 fw-bold text-danger">--</div>
+                    </div>
+                </div>
+                <div class="col-md">
+                    <div class="card p-4 text-center" style="border-left: 5px solid #198754;">
+                        <h6 class="text-muted mb-2">User Aktif</h6>
+                        <div id="count-active-users" class="display-5 fw-bold text-success">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Request Table -->
+            <div class="card shadow-sm border-0 overflow-hidden">
+                <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">📋 Verifikasi Permohonan</h5>
+                    <input type="text" id="searchInput" class="form-control bg-light border-0" style="max-width: 250px;"
+                        placeholder="Cari...">
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light">
+                            <tr class="small text-uppercase fw-bold">
+                                <th>Mahasiswa</th>
+                                <th>Resource</th>
+                                <th>Tipe</th>
+                                <th class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requestTableBody">
+                            <tr>
+                                <td colspan="4" class="text-center py-5">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/api-client.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+
+</html>

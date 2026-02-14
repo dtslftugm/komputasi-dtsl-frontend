@@ -129,6 +129,13 @@ class APIClient {
     }
 
     /**
+     * Check if admin session is valid
+     */
+    async checkAuth(token) {
+        return this.postRequest('admin-check-auth', { token });
+    }
+
+    /**
      * Get admin requests list
      */
     async getAdminRequests(status = 'Pending') {
