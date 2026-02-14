@@ -688,9 +688,9 @@ function setupFormHandlers() {
         try {
             const result = await api.submitRequest(formData);
 
-            if (result.success) {
-                const rowIndex = result.rowIndex;
-                const requestId = result.requestId;
+            if (result.success && result.data) {
+                const rowIndex = result.data.rowIndex;
+                const requestId = result.data.requestId;
 
                 // Step 2: Upload File if exists
                 if (fileObj && rowIndex) {

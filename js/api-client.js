@@ -105,18 +105,6 @@ class APIClient {
         return this.postRequest('submit-request', formData);
     }
 
-    /**
-     * Upload file to Google Drive
-     */
-    async uploadFile(rowIndex, fileData, fileName, mimeType) {
-        return this.postRequest('upload-file', {
-            rowIndex,
-            fileData,
-            fileName,
-            mimeType
-        });
-    }
-
     // ==================== ADMIN ENDPOINTS ====================
 
     /**
