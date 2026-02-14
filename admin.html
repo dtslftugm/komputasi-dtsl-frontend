@@ -164,6 +164,13 @@
             <nav class="flex-column">
                 <a href="#" class="nav-link active" onclick="showSection('dashboard'); return false;">🏠 Dashboard</a>
                 <a href="#" class="nav-link" onclick="openAgendaModal(); return false;">📅 Agenda Lab</a>
+                <a href="#" class="nav-link" onclick="showMaintenanceModal(); return false;">🛠️ Maintenance</a>
+                <a href="#" class="nav-link" onclick="alert('Fitur ini hanya tersedia di versi GAS'); return false;">📊
+                    Diagnostics</a>
+                <a href="#" class="nav-link" onclick="alert('Fitur ini hanya tersedia di versi GAS'); return false;">📅
+                    Normalize Dates</a>
+                <a href="#" class="nav-link" onclick="alert('Fitur ini hanya tersedia di versi GAS'); return false;">⚙️
+                    Setup Triggers</a>
                 <a href="#" class="nav-link" onclick="loadRequests(); return false;">🔄 Refresh Data</a>
             </nav>
             <div class="mt-auto pt-4 border-top">
@@ -200,40 +207,134 @@
                         <div id="count-expired" class="display-5 fw-bold text-danger">--</div>
                     </div>
                 </div>
+                <div class="col-md" id="col-maintenance">
+                    <div class="card p-4 text-center action-card" onclick="showMaintenanceModal()"
+                        style="cursor: pointer; border-left: 5px solid #fd7e14;">
+                        <h6 class="text-muted mb-2">Maintenance</h6>
+                        <div id="count-maintenance" class="display-5 fw-bold text-orange" style="color: #fd7e14;">0
+                        </div>
+                    </div>
+                </div>
                 <div class="col-md">
                     <div class="card p-4 text-center" style="border-left: 5px solid #198754;">
                         <h6 class="text-muted mb-2">User Aktif</h6>
                         <div id="count-active-users" class="display-5 fw-bold text-success">--</div>
                     </div>
                 </div>
+                <div class="col-md text-nowrap">
+                    <div class="card p-4 text-center">
+                        <h6 class="text-muted mb-2">Okupansi Lab</h6>
+                        <div id="count-total-requests" class="display-6 fw-bold text-primary"
+                            style="letter-spacing: -1px;">--</div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Request Table -->
-            <div class="card shadow-sm border-0 overflow-hidden">
-                <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fw-bold">📋 Verifikasi Permohonan</h5>
-                    <input type="text" id="searchInput" class="form-control bg-light border-0" style="max-width: 250px;"
-                        placeholder="Cari...">
+    </div>
+
+    <!-- Maintenance Section -->
+    <div id="maintenance-container" class="mt-5 d-none">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="fw-bold mb-0">🛠️ Daftar Maintenance & Cleanup</h4>
+            <button class="btn btn-outline-primary btn-sm rounded-pill px-3" onclick="loadRequests()">🔄 Refresh
+                Data</button>
+        </div>
+        <div class="card shadow-sm border-0 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="small text-uppercase fw-bold">
+                            <th>Target</th>
+                            <th>User / ID</th>
+                            <th>Waktu</th>
+                            <th>Tugas</th>
+                            <th class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="maintenanceSectionBody">
+                        <!-- Maintenance items will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        </main>
+    </div>
+
+    <!-- Agenda Management Modal -->
+    <div class="modal fade" id="agendaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
+                <div class="modal-header border-0 pb-0 pt-4 px-4">
+                    <h5 class="fw-bold"><i class="bi bi-calendar-event me-2"></i>Manajemen Agenda Lab</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0">
-                        <thead class="table-light">
-                            <tr class="small text-uppercase fw-bold">
-                                <th>Mahasiswa</th>
-                                <th>Resource</th>
-                                <th>Tipe</th>
-                                <th class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="requestTableBody">
-                            <tr>
-                                <td colspan="4" class="text-center py-5">Memuat data...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="modal-body p-4">
+                    <!-- Form Tambah Agenda -->
+                    <div class="card border-0 bg-light mb-4 shadow-sm" style="border-radius: 16px;">
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold mb-3 small text-uppercase text-primary">Tambah Agenda Baru</h6>
+                            <form id="agendaForm" onsubmit="event.preventDefault(); handleSimpanAgenda();">
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Ruangan</label>
+                                        <select class="form-select rounded-pill small" id="agenda-ruangan" required>
+                                            <option value="Ruang Komputer 1">Ruang Komputer 1 (Barat)</option>
+                                            <option value="Ruang Komputer 2">Ruang Komputer 2 (Timur)</option>
+                                            <option value="Ruang Penelitian">Ruang Penelitian</option>
+                                            <option value="Semua Ruangan">Semua Ruangan</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label small fw-bold">Nama Kegiatan</label>
+                                        <input type="text" class="form-control rounded-pill small" id="agenda-kegiatan"
+                                            required placeholder="Contoh: Kuliah Gambar Teknik">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Waktu Mulai</label>
+                                        <input type="datetime-local" class="form-control rounded-pill small"
+                                            id="agenda-mulai" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Waktu Selesai</label>
+                                        <input type="datetime-local" class="form-control rounded-pill small"
+                                            id="agenda-selesai" required>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-bold">Deskripsi / Catatan</label>
+                                        <textarea class="form-control" id="agenda-deskripsi" rows="2"
+                                            style="border-radius: 12px; font-size: 13px;"
+                                            placeholder="Keterangan tambahan..."></textarea>
+                                    </div>
+                                    <div class="col-12 text-end mt-2">
+                                        <button type="submit"
+                                            class="btn btn-primary rounded-pill px-4 btn-sm fw-bold">Simpan
+                                            Agenda</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- List Agenda Mendatang -->
+                    <h6 class="fw-bold mb-3 small text-uppercase">Agenda Mendatang</h6>
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-sm table-hover align-middle">
+                            <thead class="table-light sticky-top">
+                                <tr class="small">
+                                    <th>Ruangan</th>
+                                    <th>Kegiatan</th>
+                                    <th>Waktu</th>
+                                    <th class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="agenda-list" class="small">
+                                <!-- Data injected here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 
     <!-- Scripts -->

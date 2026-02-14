@@ -107,9 +107,23 @@ async function loadRequests() {
                 document.getElementById('count-pending').textContent = res.stats.pending || 0;
                 document.getElementById('count-active-users').textContent = res.stats.activeUsers || 0;
                 document.getElementById('count-expired').textContent = res.stats.toRevoke || 0;
+
+                // New Stats (Synced from GAS)
+                if (document.getElementById('count-maintenance')) {
+                    document.getElementById('count-maintenance').textContent = res.stats.labMaintenance || 0;
+                }
+                if (document.getElementById('count-total-requests')) {
+                    document.getElementById('count-total-requests').textContent =
+                        `${res.stats.labUsed || 0} / ${res.stats.labTotal || 0} PC`;
+                }
             }
 
             renderTable();
+
+            // Load Maintenance if stats show some
+            if (res.stats && res.stats.labMaintenance > 0) {
+                loadMaintenanceList();
+            }
         }
     } catch (err) {
         console.error("Load requests failed:", err);
@@ -131,7 +145,7 @@ function renderTable(filter = '') {
     );
 
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted">Tidak ada data.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted">Tidak ada data permohonan baru.</td></tr>';
         return;
     }
 
@@ -155,9 +169,193 @@ function renderTable(filter = '') {
     });
 }
 
+/**
+ * --- MAINTENANCE LOGIC ---
+ */
+async function loadMaintenanceList() {
+    const tbody = document.getElementById('maintenanceSectionBody');
+    if (!tbody) return;
+
+    try {
+        const res = await api.jsonpRequest('admin-maintenance-list');
+        if (res.success && res.data) {
+            renderMaintenanceTable(res.data);
+            document.getElementById('maintenance-container').classList.remove('d-none');
+        } else {
+            document.getElementById('maintenance-container').classList.add('d-none');
+        }
+    } catch (err) {
+        console.warn("Failed to load maintenance list:", err);
+    }
+}
+
+function renderMaintenanceTable(data) {
+    const tbody = document.getElementById('maintenanceSectionBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada data maintenance.</td></tr>';
+        return;
+    }
+
+    data.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>
+                <span class="badge ${item.type === 'PC' ? 'bg-warning text-dark' : 'bg-info text-white'} me-2">${item.type}</span>
+                <span class="fw-bold">${item.targetName}</span>
+            </td>
+            <td>
+                <div class="small fw-bold">${item.lastUser || '-'}</div>
+                <div class="text-muted extra-small">ID: ${item.requestId || '-'}</div>
+            </td>
+            <td>
+                <div class="small">${item.dateRef || '-'}</div>
+                <div class="extra-small text-danger">${item.daysAgo || 0} hari lalu</div>
+            </td>
+            <td><div class="small text-muted">Maintenance rutin/Cleanup</div></td>
+            <td class="text-center">
+                <button class="btn btn-outline-primary btn-sm rounded-pill px-3" 
+                        onclick="alert('Selesaikan maintenance di dashboard GAS untuk keamanan sinkronisasi data.')">Detail</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function showMaintenanceModal() {
+    const container = document.getElementById('maintenance-container');
+    if (container) {
+        container.classList.remove('d-none');
+        container.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
 // Global functions for UI
 window.loadRequests = loadRequests;
+window.showSection = (sectionId) => {
+    // Basic navigation logic
+    console.log("Switching to section:", sectionId);
+    // For now, only dashboard is implemented. 
+    // If you add more pages, handle them here.
+};
+window.showMaintenanceModal = showMaintenanceModal;
 window.openProcessModal = (id) => alert("Fitur proses detail (modal) akan menyusul di versi berikutnya.");
+
+/**
+ * --- AGENDA MANAGEMENT ---
+ */
+let agendaModalObj = null;
+
+async function openAgendaModal() {
+    if (!agendaModalObj) {
+        agendaModalObj = new bootstrap.Modal(document.getElementById('agendaModal'));
+    }
+    refreshAgendaList();
+    agendaModalObj.show();
+}
+
+async function refreshAgendaList() {
+    const tbody = document.getElementById('agenda-list');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3 small">Memuat data agenda...</td></tr>';
+
+    try {
+        const res = await api.jsonpRequest('admin-agendas');
+        if (!tbody) return;
+        const agendas = res.data || [];
+        
+        if (agendas.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3 small">Tidak ada agenda mendatang</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = agendas.map(a => {
+            return `
+                <tr>
+                    <td class="fw-bold text-primary">${a.ruangan}</td>
+                    <td>${a.kegiatan}</td>
+                    <td><div class="small">${a.mulai} - ${a.selesai}</div></td>
+                    <td class="text-center">
+                        <div class="d-flex justify-content-center gap-1">
+                            <button class="btn btn-outline-danger btn-sm rounded-circle p-1" style="width:24px; height:24px; display:flex; align-items:center; justify-content:center;" onclick="handleHapusAgenda(${a.rowIndex})" title="Hapus">❌</button>
+                            <button class="btn btn-outline-warning btn-sm rounded-circle p-1" style="width:24px; height:24px; display:flex; align-items:center; justify-content:center;" onclick="handleBroadcastAgenda(${a.rowIndex})" title="Siarkan Pengingat">📢</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (err) {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-3 small">Error memuat data</td></tr>';
+    }
+}
+
+async function handleSimpanAgenda() {
+    const data = {
+        ruangan: document.getElementById('agenda-ruangan').value,
+        kegiatan: document.getElementById('agenda-kegiatan').value,
+        mulai: document.getElementById('agenda-mulai').value,
+        selesai: document.getElementById('agenda-selesai').value,
+        deskripsi: document.getElementById('agenda-deskripsi').value
+    };
+
+    showLoading("Menyimpan Agenda...");
+    try {
+        const res = await api.jsonpRequest('admin-save-agenda', data);
+        if (res.success) {
+            alert("Agenda berhasil disimpan.");
+            document.getElementById('agendaForm').reset();
+            refreshAgendaList();
+        } else {
+            alert("Gagal: " + res.message);
+        }
+    } catch (err) {
+        alert("Error: " + err.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function handleHapusAgenda(rowIndex) {
+    if (!confirm("Hapus agenda ini?")) return;
+    
+    showLoading("Menghapus...");
+    try {
+        const res = await api.jsonpRequest('admin-delete-agenda', { rowIndex: rowIndex });
+        if (res.success) {
+            refreshAgendaList();
+        } else {
+            alert("Gagal: " + res.message);
+        }
+    } catch (err) {
+        alert("Error: " + err.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function handleBroadcastAgenda(rowIndex) {
+    if (!confirm("Siarkan pengingat agenda ke pengguna terkait?")) return;
+    
+    showLoading("Broadcasting...");
+    try {
+        const res = await api.jsonpRequest('admin-broadcast-agenda', { rowIndex: rowIndex });
+        if (res.success) {
+            alert(`Broadcast terkirim ke ${res.count} pengguna.`);
+        } else {
+            alert("Gagal: " + res.message);
+        }
+    } catch (err) {
+        alert("Error: " + err.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+window.openAgendaModal = openAgendaModal;
+window.handleSimpanAgenda = handleSimpanAgenda;
+window.handleHapusAgenda = handleHapusAgenda;
+window.handleBroadcastAgenda = handleBroadcastAgenda;
 
 /**
  * --- BRANDING LOGIC (Milestone 11) ---
