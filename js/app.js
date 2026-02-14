@@ -249,7 +249,7 @@ async function setupSoftwareSelect() {
 
                 if (typeof sw === 'object' && sw.name) {
                     opt.value = sw.name;
-                    opt.textContent = sw.name + (sw.isAvailable ? "" : " (FULL)");
+                    opt.textContent = sw.name + (sw.isAvailable ? "" : " (Tidak Tersedia)");
                     if (!sw.isAvailable) opt.disabled = true;
                 } else {
                     opt.value = sw;
