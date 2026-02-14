@@ -266,7 +266,7 @@ async function handleFinishPCMaintenance(computerName) {
 
     showLoading("Memproses...");
     try {
-        const res = await api.jsonpRequest('admin-complete-maintenance', { computerName: computerName });
+        const res = await api.jsonpRequest('admin-maintenance-complete', { computerName: computerName });
         if (res.success) {
             alert("Berhasil: PC sudah tersedia kembali.");
             loadRequests();
@@ -290,7 +290,7 @@ async function handleFinishLicenseCleanup(requestId, rowIndex) {
 
     showLoading("Memproses...");
     try {
-        const res = await api.jsonpRequest('admin-complete-license-cleanup', { requestId, rowIndex });
+        const res = await api.jsonpRequest('admin-license-cleanup', { requestId, rowIndex });
         if (res.success) {
             alert("Berhasil: Tugas cleanup selesai.");
             loadRequests();
@@ -370,7 +370,7 @@ async function openProcessModal(requestId) {
         document.getElementById('spec-name').textContent = req.preferredComputer;
 
         try {
-            const res = await api.jsonpRequest('admin-computer-details', { computerName: req.preferredComputer });
+            const res = await api.jsonpRequest('admin-get-computer-details', { computerName: req.preferredComputer });
             if (res.success && res.data) {
                 document.getElementById('spec-anydesk').textContent = res.data.anydeskId || '-';
                 document.getElementById('spec-ip').textContent = res.data.ipAddress || '-';
