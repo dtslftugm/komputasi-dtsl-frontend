@@ -17,8 +17,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
         // Load initial data from API
-        initialData = await api.getInitialData();
-        console.log('Initial Data received:', initialData);
+        const response = await api.getInitialData();
+        console.log('API Response received:', response);
+
+        if (response && response.success) {
+            initialData = response.data;
+        } else {
+            throw new Error(response ? response.message : 'Unknown API error');
+        }
+
+        console.log('Initial Data extracted:', initialData);
         console.log('Has logo?', initialData?.logo !== undefined);
         console.log('Has qr?', initialData?.qr !== undefined);
         console.log('Has prodiList?', initialData?.prodiList !== undefined);
