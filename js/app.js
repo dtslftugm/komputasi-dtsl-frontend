@@ -578,8 +578,8 @@ function loadAvailableComputers() {
     pagination.classList.add('d-none');
 
     api.getAvailableComputers(room)
-        .then(function (computers) {
-            availableComputers = computers || [];
+        .then(function (response) {
+            availableComputers = (response && response.data) ? response.data : [];
             filterComputers();
         })
         .catch(function (error) {

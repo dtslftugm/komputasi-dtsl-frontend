@@ -138,6 +138,26 @@ APIClient.prototype.submitRequest = function (formData) {
     return this.run('apiSubmitRequest', formData);
 };
 
+APIClient.prototype.adminLogin = function (email, password) {
+    return this.run('apiAdminLogin', { email: email, password: password });
+};
+
+APIClient.prototype.checkAuth = function (token) {
+    return this.run('apiCheckAuth', { token: token });
+};
+
+APIClient.prototype.getAdminRequests = function () {
+    return this.run('apiGetAdminRequests');
+};
+
+APIClient.prototype.approveRequest = function (data) {
+    return this.run('apiApproveRequest', data);
+};
+
+APIClient.prototype.rejectRequest = function (data) {
+    return this.run('apiRejectRequest', data);
+};
+
 APIClient.prototype.uploadFile = function (data) {
     if (this.isInGAS()) {
         return this.run('apiUploadFile', data);
