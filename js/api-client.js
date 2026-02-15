@@ -1,188 +1,166 @@
 /**
- * API Client - Hybrid Wrapper untuk Google Apps Script 
+ * API Client - Hybrid Wrapper untuk Google Apps Script (ES5 Version)
  * Mendukung akses via JSONP (GitHub/External) dan google.script.run (Inside GAS)
  */
-class APIClient {
-    constructor() {
-        // Detect environment
-        this.isGAS = typeof google !== 'undefined' && google.script && google.script.run;
-
-        // Robust CONFIG detection
-        var globalConfig = (typeof CONFIG !== 'undefined') ? CONFIG : (window.CONFIG || {});
-        this.baseURL = globalConfig.API_URL || '';
-        this.callbackCounter = 0;
-
-        if (!this.isGAS && !this.baseURL) {
-            console.error('APIClient: CONFIG.API_URL is missing! Check config.js');
-        }
-
-        // Map internal GAS function names to JSONP paths
-        this.functionMap = {
-            'apiGetInitialData': 'initial-data',
-            'apiGetAvailableComputers': 'computers-available',
-            'apiGetBranding': 'branding',
-            'apiCheckSoftwareRestrictions': 'check-restrictions',
-            'apiSubmitRequest': 'submit-request',
-            'apiAdminLogin': 'admin-login',
-            'apiCheckAuth': 'admin-check-auth',
-            'apiGetAdminRequests': 'admin-requests',
-            'apiApproveRequest': 'admin-approve',
-            'apiRejectRequest': 'admin-reject'
-        };
-    }
-
-    /**
-     * Generic run method that works in both environments
-     */
-    async run(functionName) {
-        var args = Array.prototype.slice.call(arguments, 1);
-
-        if (this.isGAS) {
-            return new Promise((resolve, reject) => {
-                var runner = google.script.run
-                    .withSuccessHandler(resolve)
-                    .withFailureHandler(function (err) {
-                        console.error("GAS Error (" + functionName + "):", err);
-                        reject(err);
-                    });
-                runner[functionName].apply(runner, args);
-            });
-        } else {
-            // Mapping for External JSONP
-            var path = this.functionMap[functionName] || functionName;
-            var params = args[0] || {};
-            return this.jsonpRequest(path, params);
-        }
-    }
-
-    /**
-     * Make JSONP request (bypass CORS) - Primitive for maximum compatibility
-     */
-    async jsonpRequest(path, params) {
-        var _this = this;
-        return new Promise((resolve, reject) => {
-            var cleanBaseURL = (_this.baseURL || '').trim();
-            if (!cleanBaseURL) {
-                reject(new Error('API URL (CONFIG.API_URL) belum diatur di config.js'));
-                return;
-            }
-
-            // Simplified callback name (shorter, no special chars)
-            var callbackName = 'cb' + (++_this.callbackCounter) + '_' + Date.now();
-            var script = document.createElement('script');
-
-            // Manual query string building
-            var queryString = 'path=' + encodeURIComponent(path) + '&callback=' + encodeURIComponent(callbackName);
-
-            if (params && typeof params === 'object') {
-                for (var key in params) {
-                    if (Object.prototype.hasOwnProperty.call(params, key)) {
-                        queryString += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
-                    }
-                }
-            }
-
-            var finalURL = cleanBaseURL + (cleanBaseURL.indexOf('?') === -1 ? '?' : '&') + queryString;
-            console.log('JSONP Request:', finalURL);
-            script.src = finalURL;
-
-            window[callbackName] = function (response) {
-                delete window[callbackName];
-                if (script.parentNode) script.parentNode.removeChild(script);
-
-                if (response && response.success) {
-                    resolve(response);
-                } else {
-                    var msg = (response && response.message) ? response.message : 'Request failed at backend';
-                    reject(new Error(msg));
-                }
-            };
-
-            script.onerror = function () {
-                delete window[callbackName];
-                if (script.parentNode) script.parentNode.removeChild(script);
-                console.error('Script failed to load:', finalURL);
-
-                // Detailed error for mobile debugging
-                var errorMsg = 'Script load failed.\nURL: ' + finalURL;
-                reject(new Error(errorMsg));
-            };
-
-            document.body.appendChild(script);
-        });
-    }
-
-    // ==================== WRAPPER METHODS (Backward Compatibility) ====================
-
-    async getInitialData(renewalId) {
-        return this.run('apiGetInitialData', renewalId ? { renewal_id: renewalId } : {});
-    }
-
-    async getAvailableComputers(room) {
-        return this.run('apiGetAvailableComputers', room ? { room: room } : {});
-    }
-
-    async getBranding() {
-        return this.run('apiGetBranding');
-    }
-
-    async checkSoftwareRestrictions(softwareListStr) {
-        return this.run('apiCheckSoftwareRestrictions', { software: softwareListStr });
-    }
-
-    async submitRequest(formData) {
-        return this.run('apiSubmitRequest', formData);
-    }
-
-    async adminLogin(email, password) {
-        return this.run('apiAdminLogin', { email, password });
-    }
-
-    async checkAuth(token) {
-        return this.run('apiCheckAuth', { token });
-    }
-
-    async getAdminRequests(status) {
-        return this.run('apiGetAdminRequests', { status: status || 'Pending' });
-    }
-
-    async approveRequest(requestId, expirationDate, adminNotes, activationKey) {
-        return this.run('apiApproveRequest', {
-            requestId,
-            expirationDate,
-            adminNotes,
-            activationKey
-        });
-    }
-
-    async rejectRequest(requestId, reason) {
-        return this.run('apiRejectRequest', { requestId, reason });
-    }
-
-    async uploadFile(data) {
-        if (this.isGAS) {
-            return this.run('apiUploadFile', data);
-        }
-
-        const payload = JSON.stringify({
-            path: 'upload-file',
-            rowIndex: data.rowIndex,
-            fileData: data.fileData,
-            mimeType: data.mimeType,
-            fileName: data.fileName
-        });
-
-        return fetch(this.baseURL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: payload
-        }).then(() => {
-            return { success: true, opaque: true };
-        });
-    }
+function APIClient() {
+    this.callbackCounter = 0;
+    this.functionMap = {
+        'apiGetInitialData': 'initial-data',
+        'apiGetAvailableComputers': 'computers-available',
+        'apiGetBranding': 'branding',
+        'apiCheckSoftwareRestrictions': 'check-restrictions',
+        'apiSubmitRequest': 'submit-request',
+        'apiAdminLogin': 'admin-login',
+        'apiCheckAuth': 'admin-check-auth',
+        'apiGetAdminRequests': 'admin-requests',
+        'apiApproveRequest': 'admin-approve',
+        'apiRejectRequest': 'admin-reject'
+    };
+    console.log('APIClient (ES5) initialized');
 }
 
-// Create singleton instance
-const api = new APIClient();
-const GAS = api; // Alias for backward compatibility in GAS version
+/**
+ * Get Base URL from CONFIG
+ */
+APIClient.prototype.getBaseURL = function () {
+    var globalConfig = (typeof CONFIG !== 'undefined') ? CONFIG : (window.CONFIG || {});
+    return globalConfig.API_URL || '';
+};
+
+/**
+ * Detect environment
+ */
+APIClient.prototype.isInGAS = function () {
+    return typeof google !== 'undefined' && google.script && google.script.run;
+};
+
+/**
+ * Generic run method (Hybrid)
+ */
+APIClient.prototype.run = function (functionName, params) {
+    var _this = this;
+    if (this.isInGAS()) {
+        return new Promise(function (resolve, reject) {
+            var runner = google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(function (err) {
+                    console.error("GAS Error (" + functionName + "):", err);
+                    reject(err);
+                });
+            runner[functionName](params);
+        });
+    } else {
+        var path = this.functionMap[functionName] || functionName;
+        return this.jsonpRequest(path, params);
+    }
+};
+
+/**
+ * JSONP Request (ES5 Compatible)
+ */
+APIClient.prototype.jsonpRequest = function (path, params) {
+    var _this = this;
+    return new Promise(function (resolve, reject) {
+        var rawURL = _this.getBaseURL();
+        var cleanBaseURL = (rawURL || '').trim();
+
+        if (!cleanBaseURL) {
+            reject(new Error('API URL (CONFIG.API_URL) belum diatur di config.js'));
+            return;
+        }
+
+        _this.callbackCounter++;
+        var callbackName = 'cb' + _this.callbackCounter + '_' + Date.now();
+        var script = document.createElement('script');
+
+        var queryString = 'path=' + encodeURIComponent(path) + '&callback=' + encodeURIComponent(callbackName);
+        if (params && typeof params === 'object') {
+            for (var key in params) {
+                if (Object.prototype.hasOwnProperty.call(params, key)) {
+                    queryString += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+                }
+            }
+        }
+
+        var finalURL = cleanBaseURL + (cleanBaseURL.indexOf('?') === -1 ? '?' : '&') + queryString;
+        console.log('JSONP Request attempt:', finalURL);
+        script.src = finalURL;
+
+        var timeout = setTimeout(function () {
+            if (window[callbackName]) {
+                delete window[callbackName];
+                if (script.parentNode) script.parentNode.removeChild(script);
+                reject(new Error('Request Timeout - Google Script tidak merespon dalam 15 detik.'));
+            }
+        }, 15000);
+
+        window[callbackName] = function (response) {
+            clearTimeout(timeout);
+            delete window[callbackName];
+            if (script.parentNode) script.parentNode.removeChild(script);
+
+            if (response && response.success) {
+                resolve(response);
+            } else {
+                var msg = (response && response.message) ? response.message : 'Request failed at backend';
+                reject(new Error(msg));
+            }
+        };
+
+        script.onerror = function () {
+            clearTimeout(timeout);
+            delete window[callbackName];
+            if (script.parentNode) script.parentNode.removeChild(script);
+            console.error('Script failed to load:', finalURL);
+            var diag = "\nBaseURL: " + cleanBaseURL + "\nCallback: " + callbackName;
+            reject(new Error('Script load failed.' + diag + '\nFull URL: ' + finalURL));
+        };
+
+        document.body.appendChild(script);
+    });
+};
+
+// --- ENDPOINTS ---
+
+APIClient.prototype.getInitialData = function (renewalId) {
+    return this.run('apiGetInitialData', renewalId ? { renewal_id: renewalId } : {});
+};
+
+APIClient.prototype.getAvailableComputers = function (room) {
+    return this.run('apiGetAvailableComputers', room ? { room: room } : {});
+};
+
+APIClient.prototype.getBranding = function () {
+    return this.run('apiGetBranding');
+};
+
+APIClient.prototype.submitRequest = function (formData) {
+    return this.run('apiSubmitRequest', formData);
+};
+
+APIClient.prototype.uploadFile = function (data) {
+    if (this.isInGAS()) {
+        return this.run('apiUploadFile', data);
+    }
+
+    var payload = JSON.stringify({
+        path: 'upload-file',
+        rowIndex: data.rowIndex,
+        fileData: data.fileData,
+        mimeType: data.mimeType,
+        fileName: data.fileName
+    });
+
+    return fetch(this.getBaseURL(), {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: payload
+    }).then(function () {
+        return { success: true, opaque: true };
+    });
+};
+
+// Create instance
+var api = new APIClient();
+var GAS = api;

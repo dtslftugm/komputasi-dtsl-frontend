@@ -4,58 +4,58 @@
  */
 
 // ===== GLOBAL STATE =====
-let initialData = null;
-let dosenList = [];
-let softwareRules = {};
+var initialData = null;
+var dosenList = [];
+var softwareRules = {};
 
 // ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', function () {
     console.log('App initialized');
 
     // Show loading
     showLoading('Memuat data awal...');
 
-    try {
-        // Load initial data from API
-        const response = await api.getInitialData();
-        console.log('API Response received:', response);
+    api.getInitialData()
+        .then(function (response) {
+            console.log('API Response received:', response);
 
-        if (response && response.success) {
-            initialData = response.data;
-        } else {
-            throw new Error(response ? response.message : 'Unknown API error');
-        }
+            if (response && response.success) {
+                initialData = response.data;
+            } else {
+                throw new Error(response ? response.message : 'Unknown API error');
+            }
 
-        console.log('Initial Data extracted:', initialData);
-        console.log('Has logo?', initialData && initialData.logo !== undefined);
-        console.log('Has qr?', initialData && initialData.qr !== undefined);
-        console.log('Has prodiList?', initialData && initialData.prodiList !== undefined);
+            console.log('Initial Data extracted:', initialData);
+            console.log('Has logo?', initialData && initialData.logo !== undefined);
+            console.log('Has qr?', initialData && initialData.qr !== undefined);
+            console.log('Has prodiList?', initialData && initialData.prodiList !== undefined);
 
-        // Setup UI Components
-        setupThemeToggle();
-        setupBranding();
-        setupProdiDropdown();
-        setupDosenDropdown();
-        setupSoftwareSelect();
-        setupFormHandlers();
-        setupUploadMethodToggle();
-        setupComputerToggle();
+            // Setup UI Components
+            setupThemeToggle();
+            setupBranding();
+            setupProdiDropdown();
+            setupDosenDropdown();
+            setupSoftwareSelect();
+            setupFormHandlers();
+            setupUploadMethodToggle();
+            setupComputerToggle();
 
-        // Attach event listener for software change
-        $('#software').on('change', handleSoftwareChange);
+            // Attach event listener for software change
+            $('#software').on('change', handleSoftwareChange);
 
-        // Show announcement if exists
-        showAnnouncement();
+            // Show announcement if exists
+            showAnnouncement();
 
-        hideLoading();
-    } catch (error) {
-        console.error('Initialization error:', error);
-        console.error('Error stack:', error.stack);
-        hideLoading();
-        // More descriptive alert for debugging
-        const errorMsg = error.message || error.toString();
-        alert('Gagal memuat data: ' + errorMsg + '\n\nSilakan refresh halaman atau coba browser lain.');
-    }
+            hideLoading();
+        })
+        .catch(function (error) {
+            console.error('Initialization error:', error);
+            console.error('Error stack:', error.stack);
+            hideLoading();
+            // More descriptive alert for debugging
+            var errorMsg = error.message || error.toString();
+            alert('Gagal memuat data: ' + errorMsg + '\n\nSilakan refresh halaman atau coba browser lain.');
+        });
 });
 
 // ===== BRANDING =====
@@ -71,12 +71,12 @@ function setupBranding() {
     console.log('qr:', initialData.qr ? 'present (length: ' + initialData.qr.length + ')' : 'EMPTY');
 
     // Set logo
-    const logo = document.getElementById('app-logo');
+    var logo = document.getElementById('app-logo');
     if (logo) {
-        let logoSrc = initialData.logoUrl || initialData.logo || '';
+        var logoSrc = initialData.logoUrl || initialData.logo || '';
         if (logoSrc.trim()) {
             // Add prefix if missing and it's likely base64 (doesn't start with http or data:)
-            if (!logoSrc.startsWith('http') && !logoSrc.startsWith('data:')) {
+            if (logoSrc.indexOf('http') !== 0 && logoSrc.indexOf('data:') !== 0) {
                 logoSrc = 'data:image/png;base64,' + logoSrc;
             }
             logo.src = logoSrc;
@@ -87,12 +87,12 @@ function setupBranding() {
     }
 
     // Set QR code
-    const qr = document.getElementById('app-qr');
+    var qr = document.getElementById('app-qr');
     if (qr) {
-        let qrSrc = initialData.qrUrl || initialData.qr || '';
+        var qrSrc = initialData.qrUrl || initialData.qr || '';
         if (qrSrc.trim()) {
             // Add prefix if missing
-            if (!qrSrc.startsWith('http') && !qrSrc.startsWith('data:')) {
+            if (qrSrc.indexOf('http') !== 0 && qrSrc.indexOf('data:') !== 0) {
                 qrSrc = 'data:image/png;base64,' + qrSrc;
             }
             qr.src = qrSrc;
@@ -107,20 +107,20 @@ function setupBranding() {
 function showAnnouncement() {
     if (!initialData || !initialData.announcementText) return;
 
-    const alertEl = document.getElementById('announcement-alert');
-    const textEl = document.getElementById('announcement-text');
-    const headerEl = document.getElementById('announcement-header');
-    const bodyEl = document.getElementById('announcement-body');
-    const chevronEl = document.getElementById('announcement-chevron');
-    const statusEl = document.getElementById('announcement-status-text');
+    var alertEl = document.getElementById('announcement-alert');
+    var textEl = document.getElementById('announcement-text');
+    var headerEl = document.getElementById('announcement-header');
+    var bodyEl = document.getElementById('announcement-body');
+    var chevronEl = document.getElementById('announcement-chevron');
+    var statusEl = document.getElementById('announcement-status-text');
 
     if (initialData.announcementText.trim()) {
         textEl.innerHTML = initialData.announcementText;
         alertEl.classList.remove('d-none');
 
         // Toggle logic
-        let isExpanded = false;
-        headerEl.addEventListener('click', () => {
+        var isExpanded = false;
+        headerEl.addEventListener('click', function () {
             isExpanded = !isExpanded;
             $(bodyEl).slideToggle();
             chevronEl.style.transform = isExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
@@ -128,7 +128,7 @@ function showAnnouncement() {
         });
 
         // Auto-collapse timer (optional, like original)
-        setTimeout(() => {
+        setTimeout(function () {
             if (!isExpanded) {
             }
         }, 5000);
@@ -137,19 +137,19 @@ function showAnnouncement() {
 
 // ===== THEME TOGGLE =====
 function setupThemeToggle() {
-    const toggle = document.getElementById('theme-toggle');
-    const body = document.body;
+    var toggle = document.getElementById('theme-toggle');
+    var body = document.body;
 
     // Load saved theme
-    const savedTheme = localStorage.getItem('theme') || 'light';
+    var savedTheme = localStorage.getItem('theme') || 'light';
     if (savedTheme === 'dark') {
         body.classList.remove('light-mode');
         toggle.innerHTML = '☀️ Light Mode';
     }
 
-    toggle.addEventListener('click', () => {
+    toggle.addEventListener('click', function () {
         body.classList.toggle('light-mode');
-        const isLight = body.classList.contains('light-mode');
+        var isLight = body.classList.contains('light-mode');
         toggle.innerHTML = isLight ? '🌙 Dark Mode' : '☀️ Light Mode';
         localStorage.setItem('theme', isLight ? 'light' : 'dark');
     });
@@ -159,11 +159,11 @@ function setupThemeToggle() {
 function setupProdiDropdown() {
     if (!initialData || !initialData.prodiList) return;
 
-    const select = document.getElementById('prodi');
+    var select = document.getElementById('prodi');
     select.innerHTML = '<option value="">-- Pilih Prodi --</option>';
 
-    initialData.prodiList.forEach(prodi => {
-        const option = document.createElement('option');
+    initialData.prodiList.forEach(function (prodi) {
+        var option = document.createElement('option');
         option.value = prodi;
         option.textContent = prodi;
         select.appendChild(option);
@@ -174,11 +174,11 @@ function setupProdiDropdown() {
 }
 
 function handleProdiChange() {
-    const prodi = document.getElementById('prodi').value;
-    const universitasContainer = document.getElementById('universitas-container');
-    const dosenSelect = document.getElementById('dosenPembimbing');
-    const dosenManual = document.getElementById('dosenPembimbingManual');
-    const select2Container = $(dosenSelect).next('.select2-container');
+    var prodi = document.getElementById('prodi').value;
+    var universitasContainer = document.getElementById('universitas-container');
+    var dosenSelect = document.getElementById('dosenPembimbing');
+    var dosenManual = document.getElementById('dosenPembimbingManual');
+    var select2Container = $(dosenSelect).next('.select2-container');
 
     if (prodi === 'Non-UGM') {
         // Show universitas field, use manual dosen input
@@ -203,16 +203,16 @@ function handleProdiChange() {
 }
 
 // ===== DOSEN DROPDOWN =====
-async function setupDosenDropdown() {
+function setupDosenDropdown() {
     try {
         if (initialData && (initialData.dosenListDetailed || initialData.dosenList)) {
             dosenList = initialData.dosenListDetailed || initialData.dosenList;
 
-            const selectEl = document.getElementById('dosenPembimbing');
+            var selectEl = document.getElementById('dosenPembimbing');
             selectEl.innerHTML = '<option value="">-- Pilih Dosen --</option>';
 
-            dosenList.forEach(dosen => {
-                const opt = document.createElement('option');
+            dosenList.forEach(function (dosen) {
+                var opt = document.createElement('option');
                 if (typeof dosen === 'object' && dosen.nama && dosen.inisial) {
                     opt.value = dosen.inisial;
                     opt.textContent = dosen.nama;
@@ -227,7 +227,7 @@ async function setupDosenDropdown() {
             selectEl.disabled = false;
 
             // Initialize Select2 with a slight delay to ensure container width is available
-            setTimeout(() => {
+            setTimeout(function () {
                 $('#dosenPembimbing').select2({
                     placeholder: 'Pilih Dosen Pembimbing / Pengampu',
                     allowClear: true,
@@ -245,17 +245,17 @@ async function setupDosenDropdown() {
 }
 
 // ===== SOFTWARE MULTI-SELECT =====
-async function setupSoftwareSelect() {
+function setupSoftwareSelect() {
     try {
         if (initialData && initialData.softwareList) {
-            const softwareList = initialData.softwareList;
+            var softwareList = initialData.softwareList;
             softwareRules = initialData.softwareRules || {};
 
-            const selectEl = document.getElementById('software');
+            var selectEl = document.getElementById('software');
             selectEl.innerHTML = ''; // Start empty for multi-select
 
-            softwareList.forEach(sw => {
-                const opt = document.createElement('option');
+            softwareList.forEach(function (sw) {
+                var opt = document.createElement('option');
 
                 if (typeof sw === 'object' && sw.name) {
                     opt.value = sw.name;
@@ -269,7 +269,7 @@ async function setupSoftwareSelect() {
                 selectEl.appendChild(opt);
             });
 
-            setTimeout(() => {
+            setTimeout(function () {
                 $('#software').select2({
                     placeholder: 'Pilih Software (boleh lebih > 1)',
                     allowClear: true,
@@ -290,42 +290,44 @@ function checkSoftwareRestrictionsClient(softwareStr) {
     if (!softwareStr) return { requiresLab: false, requiresNetwork: false, needsBorrowKey: false, allowedRooms: [], success: true };
 
     // softwareRules is already a global variable in app.js
-    const rules = softwareRules || {};
-    const softwareArray = softwareStr.split(',').map(s => s.trim());
-    const physicalRooms = ['Ruang Penelitian', 'Ruang Komputer 1', 'Ruang Komputer 2'];
+    var rules = softwareRules || {};
+    var softwareArray = softwareStr.split(',').map(function (s) { return s.trim(); });
+    var physicalRooms = ['Ruang Penelitian', 'Ruang Komputer 1', 'Ruang Komputer 2'];
 
-    let requiresLabTotal = false;
-    let requiresNetworkTotal = false;
-    let needsBorrowKey = false;
-    let commonAllowedRooms = physicalRooms.slice();
-    let isRestricted = false;
+    var requiresLabTotal = false;
+    var requiresNetworkTotal = false;
+    var needsBorrowKey = false;
+    var commonAllowedRooms = physicalRooms.slice();
+    var isRestricted = false;
 
-    softwareArray.forEach(swName => {
-        let swRules = null;
+    softwareArray.forEach(function (swName) {
+        var swRules = null;
         if (rules[swName]) {
             swRules = rules[swName];
         } else {
-            const lowerSwName = swName.toLowerCase();
-            for (const [key, allowedTypes] of Object.entries(rules)) {
-                const lowerKey = key.toLowerCase();
-                if (lowerSwName.includes(lowerKey) || lowerKey.includes(lowerSwName)) {
-                    swRules = allowedTypes;
-                    break;
+            var lowerSwName = swName.toLowerCase();
+            for (var key in rules) {
+                if (Object.prototype.hasOwnProperty.call(rules, key)) {
+                    var lowerKey = key.toLowerCase();
+                    if (lowerSwName.indexOf(lowerKey) !== -1 || lowerKey.indexOf(lowerSwName) !== -1) {
+                        swRules = rules[key];
+                        break;
+                    }
                 }
             }
         }
 
         if (swRules) {
-            const hasCloud = swRules.some(function (type) { return type.toLowerCase().indexOf('cloud license') !== -1; });
-            const hasServer = swRules.some(function (type) { return type.toLowerCase().indexOf('lisensi server') !== -1; });
-            const hasBorrow = swRules.some(function (type) { return type.toLowerCase().indexOf('borrow license') !== -1; });
+            var hasCloud = swRules.some(function (type) { return type.toLowerCase().indexOf('cloud license') !== -1; });
+            var hasServer = swRules.some(function (type) { return type.toLowerCase().indexOf('lisensi server') !== -1; });
+            var hasBorrow = swRules.some(function (type) { return type.toLowerCase().indexOf('borrow license') !== -1; });
 
             if (hasBorrow) needsBorrowKey = true;
 
             // User Rule: Forced lab only if software ONLY has physical room rules
-            const isPhysicalOnly = swRules.length > 0 && swRules.every(rule =>
-                physicalRooms.some(pr => rule.toLowerCase().includes(pr.toLowerCase()))
-            );
+            var isPhysicalOnly = swRules.length > 0 && swRules.every(function (rule) {
+                return physicalRooms.some(function (pr) { return rule.toLowerCase().indexOf(pr.toLowerCase()) !== -1; });
+            });
 
             if (isPhysicalOnly) {
                 requiresLabTotal = true;
@@ -334,15 +336,15 @@ function checkSoftwareRestrictionsClient(softwareStr) {
                 requiresNetworkTotal = true;
             }
 
-            const swPhysicalRooms = swRules.filter(t =>
-                physicalRooms.some(pr => t.toLowerCase().includes(pr.toLowerCase()))
-            );
+            var swPhysicalRooms = swRules.filter(function (t) {
+                return physicalRooms.some(function (pr) { return t.toLowerCase().indexOf(pr.toLowerCase()) !== -1; });
+            });
 
             if (swPhysicalRooms.length > 0) {
                 isRestricted = true;
-                commonAllowedRooms = commonAllowedRooms.filter(r =>
-                    swPhysicalRooms.some(spr => spr.toLowerCase().includes(r.toLowerCase()))
-                );
+                commonAllowedRooms = commonAllowedRooms.filter(function (r) {
+                    return swPhysicalRooms.some(function (spr) { return spr.toLowerCase().indexOf(r.toLowerCase()) !== -1; });
+                });
             }
         }
     });
@@ -356,46 +358,48 @@ function checkSoftwareRestrictionsClient(softwareStr) {
     };
 }
 
-async function handleSoftwareChange() {
-    const selectedSoftware = $('#software').val() || [];
-    const warningDiv = document.getElementById('labOnlyWarning');
-    const warningText = document.getElementById('labOnlyWarningText');
-    const roomSelect = document.getElementById('roomPreference');
+function handleSoftwareChange() {
+    var selectedSoftware = $('#software').val() || [];
+    var warningDiv = document.getElementById('labOnlyWarning');
+    var warningText = document.getElementById('labOnlyWarningText');
+    var roomSelect = document.getElementById('roomPreference');
 
     if (selectedSoftware.length > 0) {
         // Perform Instant Check locally (Zero Latency)
-        const result = checkSoftwareRestrictionsClient(selectedSoftware.join(', '));
-        const { requiresLab, requiresNetwork, allowedRooms = [] } = result;
+        var result = checkSoftwareRestrictionsClient(selectedSoftware.join(', '));
+        var requiresLab = result.requiresLab;
+        var requiresNetwork = result.requiresNetwork;
+        var allowedRooms = result.allowedRooms || [];
 
         if (requiresLab) {
             warningDiv.classList.remove('d-none');
-            warningText.innerHTML = `<strong>Wajib di Lab:</strong> Software ini hanya tersedia di komputer laboratorium DTSL. Anda wajib memilih unit komputer di bawah ini.`;
+            warningText.innerHTML = '<strong>Wajib di Lab:</strong> Software ini hanya tersedia di komputer laboratorium DTSL. Anda wajib memilih unit komputer di bawah ini.';
 
-            const needsComputerYes = document.getElementById('needsComputerYes');
-            const needsComputerNo = document.getElementById('needsComputerNo');
+            var needsComputerYes = document.getElementById('needsComputerYes');
+            var needsComputerNo = document.getElementById('needsComputerNo');
 
             if (needsComputerYes) needsComputerYes.checked = true;
             if (needsComputerNo) needsComputerNo.disabled = true;
 
-            const computerSection = document.getElementById('computer-section');
+            var computerSection = document.getElementById('computer-section');
             if (computerSection) computerSection.style.display = 'block';
 
         } else if (result.needsBorrowKey) {
             warningDiv.classList.remove('d-none');
-            warningText.innerHTML = `<strong>Borrow License:</strong> Software ini dapat diinstal di laptop pribadi, namun Anda memerlukan Borrow Key yang akan dikirim via email.`;
+            warningText.innerHTML = '<strong>Borrow License:</strong> Software ini dapat diinstal di laptop pribadi, namun Anda memerlukan Borrow Key yang akan dikirim via email.';
             document.getElementById('needsComputerNo').disabled = false;
         } else if (requiresNetwork) {
             warningDiv.classList.remove('d-none');
-            warningText.innerHTML = `<strong>Info Jaringan:</strong> Gunakan VPN UGM atau koneksi internal UGM untuk mengaktifkan lisensi software ini di laptop pribadi.`;
+            warningText.innerHTML = '<strong>Info Jaringan:</strong> Gunakan VPN UGM atau koneksi internal UGM untuk mengaktifkan lisensi software ini di laptop pribadi.';
             document.getElementById('needsComputerNo').disabled = false;
         } else {
             warningDiv.classList.add('d-none');
             document.getElementById('needsComputerNo').disabled = false;
         }
 
-        Array.from(roomSelect.options).forEach(opt => {
+        Array.prototype.slice.call(roomSelect.options).forEach(function (opt) {
             if (opt.value === '') return;
-            opt.disabled = allowedRooms.length > 0 && !allowedRooms.includes(opt.value);
+            opt.disabled = allowedRooms.length > 0 && allowedRooms.indexOf(opt.value) === -1;
         });
         if (result.success === false) {
             alert('Peringatan: Software yang Anda pilih memiliki batasan akses yang tidak kompatibel.');
@@ -406,15 +410,15 @@ async function handleSoftwareChange() {
 
     } else {
         warningDiv.classList.add('d-none');
-        Array.from(roomSelect.options).forEach(opt => opt.disabled = false);
+        Array.prototype.slice.call(roomSelect.options).forEach(function (opt) { opt.disabled = false; });
         document.getElementById('tipeAkses').value = '';
     }
 }
 
 function autoSetTipeAkses() {
-    const selectedSoftware = $('#software').val() || [];
-    const needsComputer = document.getElementById('needsComputerYes').checked;
-    const selectedRoom = document.getElementById('roomPreference').value;
+    var selectedSoftware = $('#software').val() || [];
+    var needsComputer = document.getElementById('needsComputerYes').checked;
+    var selectedRoom = document.getElementById('roomPreference').value;
 
     if (selectedSoftware.length === 0) {
         document.getElementById('tipeAkses').value = '';
@@ -422,23 +426,25 @@ function autoSetTipeAkses() {
         return;
     }
 
-    let hasAnyServerRule = false;
-    selectedSoftware.forEach(swName => {
-        const lowerSwName = swName.toLowerCase();
-        let swRules = [];
-        for (const [key, allowedTypes] of Object.entries(softwareRules)) {
-            const lowerKey = key.toLowerCase();
-            if (lowerSwName.includes(lowerKey) || lowerKey.includes(lowerSwName)) {
-                swRules = allowedTypes;
-                break;
+    var hasAnyServerRule = false;
+    selectedSoftware.forEach(function (swName) {
+        var lowerSwName = swName.toLowerCase();
+        var swRules = [];
+        for (var key in softwareRules) {
+            if (Object.prototype.hasOwnProperty.call(softwareRules, key)) {
+                var lowerKey = key.toLowerCase();
+                if (lowerSwName.indexOf(lowerKey) !== -1 || lowerKey.indexOf(lowerSwName) !== -1) {
+                    swRules = softwareRules[key];
+                    break;
+                }
             }
         }
-        if (swRules.some(t => t.toLowerCase().includes('lisensi server'))) {
+        if (swRules.some(function (t) { return t.toLowerCase().indexOf('lisensi server') !== -1; })) {
             hasAnyServerRule = true;
         }
     });
 
-    let accessType = '';
+    var accessType = '';
     if (needsComputer && selectedRoom) {
         accessType = selectedRoom;
     } else if (hasAnyServerRule && !needsComputer) {
@@ -453,9 +459,9 @@ function autoSetTipeAkses() {
 }
 
 function handleTipeAksesChange() {
-    const tipeAkses = document.getElementById('tipeAkses').value;
-    const isServer = tipeAkses === 'Akses Lisensi Server';
-    const serverFields = document.getElementById('serverAccessFields');
+    var tipeAkses = document.getElementById('tipeAkses').value;
+    var isServer = tipeAkses === 'Akses Lisensi Server';
+    var serverFields = document.getElementById('serverAccessFields');
     if (serverFields) {
         serverFields.style.display = isServer ? 'block' : 'none';
         document.getElementById('computerUserName').required = isServer;
@@ -465,12 +471,12 @@ function handleTipeAksesChange() {
 
 // ===== UPLOAD METHOD TOGGLE =====
 function setupUploadMethodToggle() {
-    const methodUpload = document.getElementById('methodUpload');
-    const methodLink = document.getElementById('methodLink');
-    const uploadContainer = document.getElementById('inputUploadContainer');
-    const linkContainer = document.getElementById('inputLinkContainer');
-    const uploadInput = document.getElementById('uploadSurat');
-    const linkInput = document.getElementById('linkSurat');
+    var methodUpload = document.getElementById('methodUpload');
+    var methodLink = document.getElementById('methodLink');
+    var uploadContainer = document.getElementById('inputUploadContainer');
+    var linkContainer = document.getElementById('inputLinkContainer');
+    var uploadInput = document.getElementById('uploadSurat');
+    var linkInput = document.getElementById('linkSurat');
 
     function toggleMode() {
         if (methodUpload.checked) {
@@ -491,18 +497,19 @@ function setupUploadMethodToggle() {
 }
 
 // ===== COMPUTER LAB TOGGLE =====
-let availableComputers = [];
-let filteredComputers = [];
-let selectedComputer = null;
-let currentPage = 1;
-const itemsPerPage = 6;
+// ===== COMPUTER LAB TOGGLE =====
+var availableComputers = [];
+var filteredComputers = [];
+var selectedComputer = null;
+var currentPage = 1;
+var itemsPerPage = 6;
 
 function setupComputerToggle() {
-    const needsComputerYes = document.getElementById('needsComputerYes');
-    const needsComputerNo = document.getElementById('needsComputerNo');
-    const computerSection = document.getElementById('computer-section');
-    const roomPreference = document.getElementById('roomPreference');
-    const computerSearch = document.getElementById('computer-search');
+    var needsComputerYes = document.getElementById('needsComputerYes');
+    var needsComputerNo = document.getElementById('needsComputerNo');
+    var computerSection = document.getElementById('computer-section');
+    var roomPreference = document.getElementById('roomPreference');
+    var computerSearch = document.getElementById('computer-search');
 
     function toggleComputer() {
         if (needsComputerYes.checked) {
@@ -514,17 +521,17 @@ function setupComputerToggle() {
         }
     }
 
-    needsComputerYes.addEventListener('change', () => {
+    needsComputerYes.addEventListener('change', function () {
         toggleComputer();
         autoSetTipeAkses();
     });
-    needsComputerNo.addEventListener('change', () => {
+    needsComputerNo.addEventListener('change', function () {
         toggleComputer();
         autoSetTipeAkses();
     });
 
     // Room change listener
-    roomPreference.addEventListener('change', () => {
+    roomPreference.addEventListener('change', function () {
         loadAvailableComputers();
         autoSetTipeAkses();
     });
@@ -533,7 +540,7 @@ function setupComputerToggle() {
     computerSearch.addEventListener('input', filterComputers);
 
     // Pagination listeners
-    document.getElementById('prev-page').addEventListener('click', (e) => {
+    document.getElementById('prev-page').addEventListener('click', function (e) {
         e.preventDefault();
         if (currentPage > 1) {
             currentPage--;
@@ -541,9 +548,9 @@ function setupComputerToggle() {
         }
     });
 
-    document.getElementById('next-page').addEventListener('click', (e) => {
+    document.getElementById('next-page').addEventListener('click', function (e) {
         e.preventDefault();
-        const totalPages = Math.ceil(filteredComputers.length / itemsPerPage);
+        var totalPages = Math.ceil(filteredComputers.length / itemsPerPage);
         if (currentPage < totalPages) {
             currentPage++;
             renderComputerPage();
@@ -551,13 +558,13 @@ function setupComputerToggle() {
     });
 }
 
-async function loadAvailableComputers() {
-    const room = document.getElementById('roomPreference').value;
-    const container = document.getElementById('computer-selection-container');
-    const loading = document.getElementById('computer-loading');
-    const list = document.getElementById('computer-list');
-    const noComputers = document.getElementById('no-computers');
-    const pagination = document.getElementById('computer-pagination');
+function loadAvailableComputers() {
+    var room = document.getElementById('roomPreference').value;
+    var container = document.getElementById('computer-selection-container');
+    var loading = document.getElementById('computer-loading');
+    var list = document.getElementById('computer-list');
+    var noComputers = document.getElementById('no-computers');
+    var pagination = document.getElementById('computer-pagination');
 
     if (!room) {
         container.style.display = 'none';
@@ -570,24 +577,25 @@ async function loadAvailableComputers() {
     noComputers.classList.add('d-none');
     pagination.classList.add('d-none');
 
-    try {
-        const computers = await api.getAvailableComputers(room);
-        availableComputers = computers || [];
-        filterComputers();
-    } catch (error) {
-        console.error('Error loading computers:', error);
-        loading.style.display = 'none';
-        alert('Gagal memuat daftar komputer.');
-    }
+    api.getAvailableComputers(room)
+        .then(function (computers) {
+            availableComputers = computers || [];
+            filterComputers();
+        })
+        .catch(function (error) {
+            console.error('Error loading computers:', error);
+            loading.style.display = 'none';
+            alert('Gagal memuat daftar komputer.');
+        });
 }
 
 function filterComputers() {
-    const searchTerm = document.getElementById('computer-search').value.toLowerCase();
+    var searchTerm = document.getElementById('computer-search').value.toLowerCase();
 
-    filteredComputers = availableComputers.filter(comp => {
-        const name = (comp.name || '').toLowerCase();
-        const sw = (comp.softwareInstalled || '').toLowerCase();
-        return name.includes(searchTerm) || sw.includes(searchTerm);
+    filteredComputers = availableComputers.filter(function (comp) {
+        var name = (comp.name || '').toLowerCase();
+        var sw = (comp.softwareInstalled || '').toLowerCase();
+        return name.indexOf(searchTerm) !== -1 || sw.indexOf(searchTerm) !== -1;
     });
 
     currentPage = 1;
@@ -595,11 +603,11 @@ function filterComputers() {
 }
 
 function renderComputerPage() {
-    const loading = document.getElementById('computer-loading');
-    const list = document.getElementById('computer-list');
-    const noComputers = document.getElementById('no-computers');
-    const pagination = document.getElementById('computer-pagination');
-    const pageInfo = document.getElementById('page-info');
+    var loading = document.getElementById('computer-loading');
+    var list = document.getElementById('computer-list');
+    var noComputers = document.getElementById('no-computers');
+    var pagination = document.getElementById('computer-pagination');
+    var pageInfo = document.getElementById('page-info');
 
     loading.style.display = 'none';
     list.innerHTML = '';
@@ -613,30 +621,28 @@ function renderComputerPage() {
     noComputers.classList.add('d-none');
 
     // Calculate pagination
-    const totalPages = Math.ceil(filteredComputers.length / itemsPerPage);
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    const items = filteredComputers.slice(start, end);
+    var totalPages = Math.ceil(filteredComputers.length / itemsPerPage);
+    var start = (currentPage - 1) * itemsPerPage;
+    var end = start + itemsPerPage;
+    var items = filteredComputers.slice(start, end);
 
-    items.forEach(comp => {
-        const col = document.createElement('div');
+    items.forEach(function (comp) {
+        var col = document.createElement('div');
         col.className = 'col-md-6 col-lg-4';
 
-        const isSelected = selectedComputer && selectedComputer.name === comp.name;
+        var isSelected = selectedComputer && selectedComputer.name === comp.name;
 
-        col.innerHTML = `
-            <div class="card h-100 computer-card ${isSelected ? 'selected' : ''}" style="cursor: pointer; transition: all 0.2s;">
-                <div class="card-body p-3">
-                    <h6 class="card-title fw-bold mb-1">${comp.name}</h6>
-                    <div class="small text-muted mb-2">📍 ${comp.location || '-'}</div>
-                    <div class="small mb-2" style="font-size: 0.75rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-                        <strong>💾:</strong> ${comp.softwareInstalled || '-'}
-                    </div>
-                </div>
-            </div>
-        `;
+        col.innerHTML = '<div class="card h-100 computer-card ' + (isSelected ? 'selected' : '') + '" style="cursor: pointer; transition: all 0.2s;">' +
+            '<div class="card-body p-3">' +
+            '<h6 class="card-title fw-bold mb-1">' + comp.name + '</h6>' +
+            '<div class="small text-muted mb-2">📍 ' + (comp.location || '-') + '</div>' +
+            '<div class="small mb-2" style="font-size: 0.75rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">' +
+            '<strong>💾:</strong> ' + (comp.softwareInstalled || '-') +
+            '</div>' +
+            '</div>' +
+            '</div>';
 
-        col.querySelector('.card').addEventListener('click', () => {
+        col.querySelector('.card').addEventListener('click', function () {
             selectedComputer = comp;
             renderComputerPage();
         });
@@ -646,7 +652,7 @@ function renderComputerPage() {
 
     if (totalPages > 1) {
         pagination.classList.remove('d-none');
-        pageInfo.textContent = `Page ${currentPage} / ${totalPages}`;
+        pageInfo.textContent = 'Page ' + currentPage + ' / ' + totalPages;
         document.getElementById('prev-page').parentElement.classList.toggle('disabled', currentPage === 1);
         document.getElementById('next-page').parentElement.classList.toggle('disabled', currentPage === totalPages);
     } else {
@@ -656,13 +662,13 @@ function renderComputerPage() {
 
 // ===== FORM SUBMISSION =====
 function setupFormHandlers() {
-    const form = document.getElementById('submission-form');
+    var form = document.getElementById('submission-form');
 
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', function (e) {
         e.preventDefault();
 
         // Collect form data
-        const formData = collectFormData();
+        var formData = collectFormData();
 
         // Validate
         if (!validateFormData(formData)) {
@@ -670,60 +676,64 @@ function setupFormHandlers() {
         }
 
         // Handle File Reading first if needed
-        let fileObj = null;
-        if (formData.uploadMethod === 'upload') {
-            const fileInput = document.getElementById('uploadSurat');
-            if (fileInput.files.length > 0) {
-                showLoading('Membaca file...');
-                try {
-                    fileObj = await getFileBase64(fileInput.files[0]);
-                } catch (err) {
+        var fileInput = document.getElementById('uploadSurat');
+        var processSubmission = function (fileObj) {
+            showLoading('Menyimpan data...');
+            api.submitRequest(formData)
+                .then(function (result) {
+                    if (result.success && result.data) {
+                        var rowIndex = result.data.rowIndex;
+                        var requestId = result.data.requestId;
+
+                        // Step 2: Upload File if exists
+                        if (fileObj && rowIndex) {
+                            showLoading('Mengunggah file (Step 2/2)...');
+                            api.uploadFile({
+                                rowIndex: rowIndex,
+                                fileData: fileObj.data,
+                                mimeType: fileObj.mimeType,
+                                fileName: fileObj.name
+                            }).then(function (uploadResult) {
+                                console.log('Upload result (opaque):', uploadResult);
+                                finalizeSuccess(requestId);
+                            }).catch(function (uploadErr) {
+                                console.error('File upload failed:', uploadErr);
+                                alert('Data tersimpan, namun unggahan file gagal. Admin akan menghubungi Anda jika diperlukan.');
+                                finalizeSuccess(requestId);
+                            });
+                        } else {
+                            finalizeSuccess(requestId);
+                        }
+                    } else {
+                        hideLoading();
+                        alert('Gagal menyimpan: ' + (result.message || 'Unknown error'));
+                    }
+                })
+                .catch(function (error) {
+                    hideLoading();
+                    console.error('Submission error:', error);
+                    alert('Terjadi kesalahan: ' + error.message);
+                });
+        };
+
+        var finalizeSuccess = function (requestId) {
+            hideLoading();
+            showSuccessModal(requestId || 'Berhasil');
+            resetForm();
+        };
+
+        if (formData.uploadMethod === 'upload' && fileInput.files.length > 0) {
+            showLoading('Membaca file...');
+            getFileBase64(fileInput.files[0])
+                .then(function (fileObj) {
+                    processSubmission(fileObj);
+                })
+                .catch(function (err) {
                     hideLoading();
                     alert('Gagal membaca file: ' + err.message);
-                    return;
-                }
-            }
-        }
-
-        // Step 1: Submit Text Data
-        showLoading('Menyimpan data...');
-        try {
-            const result = await api.submitRequest(formData);
-
-            if (result.success && result.data) {
-                const rowIndex = result.data.rowIndex;
-                const requestId = result.data.requestId;
-
-                // Step 2: Upload File if exists
-                if (fileObj && rowIndex) {
-                    showLoading('Mengunggah file (Step 2/2)...');
-                    try {
-                        const uploadResult = await api.uploadFile({
-                            rowIndex: rowIndex,
-                            fileData: fileObj.data,
-                            mimeType: fileObj.mimeType,
-                            fileName: fileObj.name
-                        });
-                        console.log('Upload result (opaque):', uploadResult);
-                    } catch (uploadErr) {
-                        console.error('File upload failed:', uploadErr);
-                        // We still show success for data, but warn about file
-                        alert('Data tersimpan, namun unggahan file gagal. Admin akan menghubungi Anda jika diperlukan.');
-                    }
-                }
-
-                hideLoading();
-                showSuccessModal(requestId || 'Berhasil');
-                resetForm();
-            } else {
-                hideLoading();
-                alert('Gagal menyimpan: ' + (result.message || 'Unknown error'));
-            }
-
-        } catch (error) {
-            hideLoading();
-            console.error('Submission error:', error);
-            alert('Terjadi kesalahan: ' + error.message);
+                });
+        } else {
+            processSubmission(null);
         }
     });
 }
@@ -732,33 +742,34 @@ function setupFormHandlers() {
  * Helper to convert File to Base64
  */
 function getFileBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            const base64String = reader.result.split(',')[1];
+    return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function () {
+            var result = reader.result;
+            var base64String = result.split(',')[1];
             resolve({
                 data: base64String,
                 mimeType: file.type,
                 name: file.name
             });
         };
-        reader.onerror = error => reject(error);
+        reader.onerror = function (error) { reject(error); };
         reader.readAsDataURL(file);
     });
 }
 
 function collectFormData() {
     // Get keperluan (radio buttons)
-    const keperluan = document.querySelector('input[name="keperluan"]:checked');
+    var keperluan = document.querySelector('input[name="keperluan"]:checked');
 
     // Clean and format phone number
-    let rawPhone = document.getElementById('phone').value.replace(/\D/g, '');
-    if (rawPhone.startsWith('0')) rawPhone = rawPhone.substring(1);
-    else if (rawPhone.startsWith('62')) rawPhone = rawPhone.substring(2);
-    const formattedPhone = 'https://wa.me/+62' + rawPhone;
+    var rawPhone = document.getElementById('phone').value.replace(/\D/g, '');
+    if (rawPhone.indexOf('0') === 0) rawPhone = rawPhone.substring(1);
+    else if (rawPhone.indexOf('62') === 0) rawPhone = rawPhone.substring(2);
+    var formattedPhone = 'https://wa.me/+62' + rawPhone;
 
     // Get software values (Select2 multi-select)
-    const softwareValues = $('#software').val() || [];
+    var softwareValues = $('#software').val() || [];
 
     return {
         keperluanPenggunaan: keperluan ? keperluan.value : '',
@@ -789,7 +800,7 @@ function collectFormData() {
 }
 
 function getDosenValue() {
-    const prodi = document.getElementById('prodi').value;
+    var prodi = document.getElementById('prodi').value;
     if (prodi === 'Non-UGM') {
         return document.getElementById('dosenPembimbingManual').value;
     } else {
@@ -830,7 +841,8 @@ function validateFormData(data) {
 
     // Check upload method
     if (data.uploadMethod === 'upload') {
-        const file = document.getElementById('uploadSurat').files[0];
+        var fileList = document.getElementById('uploadSurat').files;
+        var file = fileList ? fileList[0] : null;
         if (!file) {
             alert('Upload file surat keterangan');
             return false;
@@ -851,16 +863,16 @@ function validateFormData(data) {
 
 // ===== SUCCESS MODAL =====
 function showSuccessModal(requestId) {
-    const modalEl = document.getElementById('success-modal');
+    var modalEl = document.getElementById('success-modal');
     if (!modalEl) return;
 
-    const message = document.getElementById('success-message');
+    var message = document.getElementById('success-message');
     if (message) {
-        message.textContent = `Permohonan berhasil disubmit! Request ID: ${requestId}. Email konfirmasi telah dikirim.`;
+        message.textContent = 'Permohonan berhasil disubmit! Request ID: ' + requestId + '. Email konfirmasi telah dikirim.';
     }
 
     // Get or create instance to avoid duplicate objects
-    const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+    var modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
 
     // Fix ARIA Warning: remove aria-hidden before showing
     modalEl.removeAttribute('aria-hidden');
@@ -877,21 +889,22 @@ function showSuccessModal(requestId) {
 }
 
 // ===== LOADING OVERLAY =====
-function showLoading(message = 'Memuat...') {
-    const overlay = document.getElementById('loading-overlay');
-    const messageEl = document.getElementById('loading-message');
+function showLoading(message) {
+    if (!message) message = 'Memuat...';
+    var overlay = document.getElementById('loading-overlay');
+    var messageEl = document.getElementById('loading-message');
     if (messageEl) messageEl.textContent = message;
     overlay.classList.add('active');
 }
 
 function hideLoading() {
-    const overlay = document.getElementById('loading-overlay');
+    var overlay = document.getElementById('loading-overlay');
     overlay.classList.remove('active');
 }
 
 // ===== COMPREHENSIVE RESET =====
 function resetForm() {
-    const form = document.getElementById('submission-form');
+    var form = document.getElementById('submission-form');
     if (!form) return;
 
     // 1. Reset standard HTML fields
@@ -909,27 +922,28 @@ function resetForm() {
 
     // 4. Reset UI Sections & Warnings
     document.getElementById('computer-section').style.display = 'none';
-    const serverFields = document.getElementById('serverAccessFields');
+    var serverFields = document.getElementById('serverAccessFields');
     if (serverFields) serverFields.style.display = 'none';
 
-    const warningDiv = document.getElementById('labOnlyWarning');
+    var warningDiv = document.getElementById('labOnlyWarning');
     if (warningDiv) warningDiv.classList.add('d-none');
 
-    const roomSelect = document.getElementById('roomPreference');
+    var roomSelect = document.getElementById('roomPreference');
     if (roomSelect) {
-        Array.from(roomSelect.options).forEach(opt => opt.disabled = false);
+        var options = Array.prototype.slice.call(roomSelect.options);
+        options.forEach(function (opt) { opt.disabled = false; });
     }
 
-    const computerList = document.getElementById('computer-list');
+    var computerList = document.getElementById('computer-list');
     if (computerList) computerList.innerHTML = '';
 
-    const computerPagination = document.getElementById('computer-pagination');
+    var computerPagination = document.getElementById('computer-pagination');
     if (computerPagination) computerPagination.classList.add('d-none');
 
-    const universitasContainer = document.getElementById('universitas-container');
+    var universitasContainer = document.getElementById('universitas-container');
     if (universitasContainer) universitasContainer.style.display = 'none';
 
-    const dosenManual = document.getElementById('dosenPembimbingManual');
+    var dosenManual = document.getElementById('dosenPembimbingManual');
     if (dosenManual) dosenManual.style.display = 'none';
 
     console.log('Form reset completed');

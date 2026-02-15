@@ -3,18 +3,18 @@
  * Menghubungkan UI admin.html dengan APIClient
  */
 
-let pendingRequests = [];
-let currentUser = null;
-let sessionToken = localStorage.getItem('adminAuthToken');
+var pendingRequests = [];
+var currentUser = null;
+var sessionToken = localStorage.getItem('adminAuthToken');
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function () {
     setupUI();
     validateSession();
     loadAppBranding(); // Milestone 11 Branding
 
     // Login Form Handler
-    const loginForm = document.getElementById('login-form');
+    var loginForm = document.getElementById('login-form');
     if (loginForm) {
         loginForm.addEventListener('submit', handleLogin);
     }
@@ -22,53 +22,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setupUI() {
     // Search filter
-    const searchInput = document.getElementById('searchInput');
+    var searchInput = document.getElementById('searchInput');
     if (searchInput) {
-        searchInput.addEventListener('input', (e) => renderTable(e.target.value));
+        searchInput.addEventListener('input', function (e) {
+            renderTable(e.target.value);
+        });
     }
 }
 
-async function validateSession() {
+function validateSession() {
     if (!sessionToken) {
         showLogin();
         return;
     }
 
-    try {
-        const res = await api.checkAuth(sessionToken); // Gunakan method yang sesuai
-        if (res.success && res.data && res.data.authenticated) {
-            currentUser = res.data.user;
-            showDashboard();
-        } else {
-            handleLogoutAction();
-        }
-    } catch (err) {
-        console.error("Auth check failed:", err);
-        showLogin();
-    }
+    api.checkAuth(sessionToken)
+        .then(function (res) {
+            if (res.success && res.data && res.data.authenticated) {
+                currentUser = res.data.user;
+                showDashboard();
+            } else {
+                handleLogoutAction();
+            }
+        })
+        .catch(function (err) {
+            console.error("Auth check failed:", err);
+            showLogin();
+        });
 }
 
-async function handleLogin(e) {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value;
-    const pass = document.getElementById('login-password').value;
+function handleLogin(e) {
+    if (e.preventDefault) e.preventDefault();
+    var email = document.getElementById('login-email').value;
+    var pass = document.getElementById('login-password').value;
 
     showLoading("Autentikasi...");
-    try {
-        const res = await api.adminLogin(email, pass);
-        if (res.success && res.data) {
-            localStorage.setItem('adminAuthToken', res.data.token);
-            sessionToken = res.data.token;
-            currentUser = res.data.user;
-            showDashboard();
-        } else {
-            alert("Login Gagal: " + (res.message || "Email atau password salah"));
-        }
-    } catch (err) {
-        alert("Error: " + err.message);
-    } finally {
-        hideLoading();
-    }
+    api.adminLogin(email, pass)
+        .then(function (res) {
+            if (res.success && res.data) {
+                localStorage.setItem('adminAuthToken', res.data.token);
+                sessionToken = res.data.token;
+                currentUser = res.data.user;
+                showDashboard();
+            } else {
+                alert("Login Gagal: " + (res.message || "Email atau password salah"));
+            }
+        })
+        .catch(function (err) {
+            alert("Error: " + err.message);
+        })
+        .finally(function () {
+            hideLoading();
+        });
 }
 
 function showDashboard() {
@@ -95,76 +100,78 @@ function handleLogoutAction() {
     showLogin();
 }
 
-async function loadRequests() {
+function loadRequests() {
     showLoading("Memuat data...");
-    try {
-        const res = await api.getAdminRequests();
-        if (res.success) {
-            pendingRequests = res.data || [];
+    api.getAdminRequests()
+        .then(function (res) {
+            if (res.success) {
+                pendingRequests = res.data || [];
 
-            // Update stats
-            if (res.stats) {
-                document.getElementById('count-pending').textContent = res.stats.pending || 0;
-                document.getElementById('count-active-users').textContent = res.stats.activeUsers || 0;
-                document.getElementById('count-expired').textContent = res.stats.toRevoke || 0;
+                // Update stats
+                if (res.stats) {
+                    document.getElementById('count-pending').textContent = res.stats.pending || 0;
+                    document.getElementById('count-active-users').textContent = res.stats.activeUsers || 0;
+                    document.getElementById('count-expired').textContent = res.stats.toRevoke || 0;
 
-                // New Stats (Synced from GAS)
-                if (document.getElementById('count-maintenance')) {
-                    document.getElementById('count-maintenance').textContent = res.stats.labMaintenance || 0;
+                    // New Stats (Synced from GAS)
+                    if (document.getElementById('count-maintenance')) {
+                        document.getElementById('count-maintenance').textContent = res.stats.labMaintenance || 0;
+                    }
+                    if (document.getElementById('count-total-requests')) {
+                        document.getElementById('count-total-requests').textContent =
+                            (res.stats.labUsed || 0) + ' / ' + (res.stats.labTotal || 0) + ' PC';
+                    }
                 }
-                if (document.getElementById('count-total-requests')) {
-                    document.getElementById('count-total-requests').textContent =
-                        `${res.stats.labUsed || 0} / ${res.stats.labTotal || 0} PC`;
+
+                renderTable();
+
+                // Load Maintenance if stats show some
+                if (res.stats && res.stats.labMaintenance > 0) {
+                    loadMaintenanceList();
                 }
             }
-
-            renderTable();
-
-            // Load Maintenance if stats show some
-            if (res.stats && res.stats.labMaintenance > 0) {
-                loadMaintenanceList();
-            }
-        }
-    } catch (err) {
-        console.error("Load requests failed:", err);
-    } finally {
-        hideLoading();
-    }
+        })
+        .catch(function (err) {
+            console.error("Load requests failed:", err);
+        })
+        .finally(function () {
+            hideLoading();
+        });
 }
 
-function renderTable(filter = '') {
-    const tbody = document.getElementById('requestTableBody');
+function renderTable(filter) {
+    var filterValue = filter || '';
+    var tbody = document.getElementById('requestTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    const query = filter.toLowerCase();
-    const filtered = pendingRequests.filter(r =>
-        (r.nama || "").toLowerCase().includes(query) ||
-        (r.requestId || "").toLowerCase().includes(query) ||
-        (r.nim || "").toLowerCase().includes(query)
-    );
+    var query = filterValue.toLowerCase();
+    var filtered = pendingRequests.filter(function (r) {
+        var nama = (r.nama || "").toLowerCase();
+        var rid = (r.requestId || "").toLowerCase();
+        var nim = (r.nim || "").toLowerCase();
+        return nama.indexOf(query) !== -1 || rid.indexOf(query) !== -1 || nim.indexOf(query) !== -1;
+    });
 
     if (filtered.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted">Tidak ada data permohonan baru.</td></tr>';
         return;
     }
 
-    filtered.forEach(req => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>
-                <div class="fw-bold">${req.nama}</div>
-                <div class="text-muted small">${req.nim} | ID: ${req.requestId}</div>
-            </td>
-            <td>
-                <div class="small">${req.software}</div>
-                <div class="text-muted extra-small">${req.roomPreference}</div>
-            </td>
-            <td><span class="badge bg-light text-dark border">${req.requestType}</span></td>
-            <td class="text-center">
-                <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="openProcessModal('${req.requestId}')">Proses</button>
-            </td>
-        `;
+    filtered.forEach(function (req) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' +
+            '<div class="fw-bold">' + req.nama + '</div>' +
+            '<div class="text-muted small">' + req.nim + ' | ID: ' + req.requestId + '</div>' +
+            '</td>' +
+            '<td>' +
+            '<div class="small">' + req.software + '</div>' +
+            '<div class="text-muted extra-small">' + req.roomPreference + '</div>' +
+            '</td>' +
+            '<td><span class="badge bg-light text-dark border">' + req.requestType + '</span></td>' +
+            '<td class="text-center">' +
+            '<button class="btn btn-primary btn-sm rounded-pill px-3" onclick="openProcessModal(\'' + req.requestId + '\')">Proses</button>' +
+            '</td>';
         tbody.appendChild(tr);
     });
 }
@@ -172,25 +179,26 @@ function renderTable(filter = '') {
 /**
  * --- MAINTENANCE LOGIC ---
  */
-async function loadMaintenanceList() {
-    const tbody = document.getElementById('maintenanceSectionBody');
+function loadMaintenanceList() {
+    var tbody = document.getElementById('maintenanceSectionBody');
     if (!tbody) return;
 
-    try {
-        const res = await api.jsonpRequest('admin-maintenance-list');
-        if (res.success && res.data) {
-            renderMaintenanceTable(res.data);
-            document.getElementById('maintenance-container').classList.remove('d-none');
-        } else {
-            document.getElementById('maintenance-container').classList.add('d-none');
-        }
-    } catch (err) {
-        console.warn("Failed to load maintenance list:", err);
-    }
+    api.jsonpRequest('admin-maintenance-list')
+        .then(function (res) {
+            if (res.success && res.data) {
+                renderMaintenanceTable(res.data);
+                document.getElementById('maintenance-container').classList.remove('d-none');
+            } else {
+                document.getElementById('maintenance-container').classList.add('d-none');
+            }
+        })
+        .catch(function (err) {
+            console.warn("Failed to load maintenance list:", err);
+        });
 }
 
 function renderMaintenanceTable(data) {
-    const tbody = document.getElementById('maintenanceSectionBody');
+    var tbody = document.getElementById('maintenanceSectionBody');
     if (!tbody) return;
     tbody.innerHTML = '';
 
@@ -199,114 +207,112 @@ function renderMaintenanceTable(data) {
         return;
     }
 
-    data.forEach(item => {
-        const tr = document.createElement('tr');
+    data.forEach(function (item) {
+        var tr = document.createElement('tr');
 
-        let checklistHtml = '';
-        let actionBtn = '';
+        var checklistHtml = '';
+        var actionBtn = '';
 
         if (item.type === 'PC') {
-            checklistHtml = `
-                <div class="form-check small mb-1">
-                    <input class="form-check-input" type="checkbox" id="check-storage-${item.targetName}">
-                    <label class="form-check-label" for="check-storage-${item.targetName}">Cek Sisa Storage</label>
-                </div>
-                <div class="form-check small mb-1">
-                    <input class="form-check-input" type="checkbox" id="check-junk-${item.targetName}">
-                    <label class="form-check-label" for="check-junk-${item.targetName}">Bersihkan File Sampah</label>
-                </div>
-            `;
-            actionBtn = `<button class="btn btn-primary btn-sm rounded-pill px-3" onclick="handleFinishPCMaintenance('${item.targetName}')">PC OK</button>`;
+            checklistHtml = '<div class="form-check small mb-1">' +
+                '<input class="form-check-input" type="checkbox" id="check-storage-' + item.targetName + '">' +
+                '<label class="form-check-label" for="check-storage-' + item.targetName + '">Cek Sisa Storage</label>' +
+                '</div>' +
+                '<div class="form-check small mb-1">' +
+                '<input class="form-check-input" type="checkbox" id="check-junk-' + item.targetName + '">' +
+                '<label class="form-check-label" for="check-junk-' + item.targetName + '">Bersihkan File Sampah</label>' +
+                '</div>';
+            actionBtn = '<button class="btn btn-primary btn-sm rounded-pill px-3" onclick="handleFinishPCMaintenance(\'' + item.targetName + '\')">PC OK</button>';
         } else {
-            checklistHtml = `
-                <div class="form-check small fw-bold text-info">
-                    <input class="form-check-input border-info" type="checkbox" id="check-license-${item.requestId}">
-                    <label class="form-check-label" for="check-license-${item.requestId}">Hapus dari Cloud Vendor Dashboard</label>
-                </div>
-            `;
-            actionBtn = `<button class="btn btn-info btn-sm rounded-pill px-3 text-white" onclick="handleFinishLicenseCleanup('${item.requestId}', ${item.rowIndex})">Lisensi OK</button>`;
+            checklistHtml = '<div class="form-check small fw-bold text-info">' +
+                '<input class="form-check-input border-info" type="checkbox" id="check-license-' + item.requestId + '">' +
+                '<label class="form-check-label" for="check-license-' + item.requestId + '">Hapus dari Cloud Vendor Dashboard</label>' +
+                '</div>';
+            actionBtn = '<button class="btn btn-info btn-sm rounded-pill px-3 text-white" onclick="handleFinishLicenseCleanup(\'' + item.requestId + '\', ' + item.rowIndex + ')">Lisensi OK</button>';
         }
 
-        tr.innerHTML = `
-            <td>
-                <span class="badge ${item.type === 'PC' ? 'bg-warning text-dark' : 'bg-info text-white'} me-2">${item.type}</span>
-                <span class="fw-bold">${item.targetName}</span>
-            </td>
-            <td>
-                <div class="small fw-bold">${item.lastUser || '-'}</div>
-                <div class="text-muted extra-small">ID: ${item.requestId || '-'}</div>
-            </td>
-            <td>
-                <div class="small">${item.dateRef || '-'}</div>
-                <div class="extra-small text-danger">${item.daysAgo || 0} hari lalu</div>
-            </td>
-            <td>${checklistHtml}</td>
-            <td class="text-center">${actionBtn}</td>
-        `;
+        tr.innerHTML = '<td>' +
+            '<span class="badge ' + (item.type === 'PC' ? 'bg-warning text-dark' : 'bg-info text-white') + ' me-2">' + item.type + '</span>' +
+            '<span class="fw-bold">' + item.targetName + '</span>' +
+            '</td>' +
+            '<td>' +
+            '<div class="small fw-bold">' + (item.lastUser || '-') + '</div>' +
+            '<div class="text-muted extra-small">ID: ' + (item.requestId || '-') + '</div>' +
+            '</td>' +
+            '<td>' +
+            '<div class="small">' + (item.dateRef || '-') + '</div>' +
+            '<div class="extra-small text-danger">' + (item.daysAgo || 0) + ' hari lalu</div>' +
+            '</td>' +
+            '<td>' + checklistHtml + '</td>' +
+            '<td class="text-center">' + actionBtn + '</td>';
         tbody.appendChild(tr);
     });
 }
 
 function showMaintenanceModal() {
-    const modal = new bootstrap.Modal(document.getElementById('maintenanceModal'));
-    loadMaintenanceList('maintenanceTableBody');
+    var modal = new bootstrap.Modal(document.getElementById('maintenanceModal'));
+    loadMaintenanceList();
     modal.show();
 }
 
-async function handleFinishPCMaintenance(computerName) {
-    const storageCheck = document.getElementById(`check-storage-${computerName}`).checked;
-    const junkCheck = document.getElementById(`check-junk-${computerName}`).checked;
+function handleFinishPCMaintenance(computerName) {
+    var storageCheck = document.getElementById('check-storage-' + computerName).checked;
+    var junkCheck = document.getElementById('check-junk-' + computerName).checked;
 
     if (!storageCheck || !junkCheck) {
         alert("Berikan tanda centang pada tugas yang sudah dikerjakan.");
         return;
     }
 
-    if (!confirm(`Status PC ${computerName} akan diatur menjadi Available. Lanjutkan?`)) return;
+    if (!confirm("Status PC " + computerName + " akan diatur menjadi Available. Lanjutkan?")) return;
 
     showLoading("Memproses...");
-    try {
-        const res = await api.jsonpRequest('admin-maintenance-complete', { computerName: computerName });
-        if (res.success) {
-            alert("Berhasil: PC sudah tersedia kembali.");
-            loadRequests();
-        } else {
-            alert("Gagal: " + res.message);
-        }
-    } catch (err) {
-        alert("Error: " + err.message);
-    } finally {
-        hideLoading();
-    }
+    api.jsonpRequest('admin-maintenance-complete', { computerName: computerName })
+        .then(function (res) {
+            if (res.success) {
+                alert("Berhasil: PC sudah tersedia kembali.");
+                loadRequests();
+            } else {
+                alert("Gagal: " + res.message);
+            }
+        })
+        .catch(function (err) {
+            alert("Error: " + err.message);
+        })
+        .finally(function () {
+            hideLoading();
+        });
 }
 
-async function handleFinishLicenseCleanup(requestId, rowIndex) {
-    if (!document.getElementById(`check-license-${requestId}`).checked) {
+function handleFinishLicenseCleanup(requestId, rowIndex) {
+    if (!document.getElementById('check-license-' + requestId).checked) {
         alert("Konfirmasi bahwa user telah dihapus dari vendor dashboard.");
         return;
     }
 
-    if (!confirm(`Selesaikan tugas cleanup untuk ID ${requestId}?`)) return;
+    if (!confirm("Selesaikan tugas cleanup untuk ID " + requestId + "?")) return;
 
     showLoading("Memproses...");
-    try {
-        const res = await api.jsonpRequest('admin-license-cleanup', { requestId, rowIndex });
-        if (res.success) {
-            alert("Berhasil: Tugas cleanup selesai.");
-            loadRequests();
-        } else {
-            alert("Gagal: " + res.message);
-        }
-    } catch (err) {
-        alert("Error: " + err.message);
-    } finally {
-        hideLoading();
-    }
+    api.jsonpRequest('admin-license-cleanup', { requestId: requestId, rowIndex: rowIndex })
+        .then(function (res) {
+            if (res.success) {
+                alert("Berhasil: Tugas cleanup selesai.");
+                loadRequests();
+            } else {
+                alert("Gagal: " + res.message);
+            }
+        })
+        .catch(function (err) {
+            alert("Error: " + err.message);
+        })
+        .finally(function () {
+            hideLoading();
+        });
 }
 
 // Global functions for UI
 window.loadRequests = loadRequests;
-window.showSection = (sectionId) => {
+window.showSection = function (sectionId) {
     console.log("Switching to section:", sectionId);
 };
 window.showMaintenanceModal = showMaintenanceModal;
@@ -316,11 +322,17 @@ window.handleFinishLicenseCleanup = handleFinishLicenseCleanup;
 /**
  * --- REQUEST PROCESSING LOGIC ---
  */
-let currentRequest = null;
-let processModalObj = null;
+var currentRequest = null;
+var processModalObj = null;
 
-async function openProcessModal(requestId) {
-    const req = pendingRequests.find(r => r.requestId === requestId);
+function openProcessModal(requestId) {
+    var req = null;
+    for (var i = 0; i < pendingRequests.length; i++) {
+        if (pendingRequests[i].requestId === requestId) {
+            req = pendingRequests[i];
+            break;
+        }
+    }
     if (!req) return;
 
     currentRequest = req;
@@ -338,11 +350,11 @@ async function openProcessModal(requestId) {
     document.getElementById('admin-notes').value = '';
 
     // Handle Software Badges
-    const swContainer = document.getElementById('modal-software');
+    var swContainer = document.getElementById('modal-software');
     swContainer.innerHTML = '';
     if (req.software) {
-        req.software.split(',').forEach(s => {
-            const span = document.createElement('span');
+        req.software.split(',').forEach(function (s) {
+            var span = document.createElement('span');
             span.className = 'badge bg-light text-dark border small';
             span.textContent = s.trim();
             swContainer.appendChild(span);
@@ -350,47 +362,48 @@ async function openProcessModal(requestId) {
     }
 
     // Default Expiration (14 days for Research, 30 for others)
-    const days = (req.roomPreference === 'Ruang Penelitian') ? 14 : 30;
-    const expDate = new Date();
+    var days = (req.roomPreference === 'Ruang Penelitian') ? 14 : 30;
+    var expDate = new Date();
     expDate.setDate(expDate.getDate() + days);
     document.getElementById('expiration-date-input').value = expDate.toISOString().split('T')[0];
 
     // Activation Key handling (simplified for now)
-    const keyContainer = document.getElementById('activation-key-container');
+    var keyContainer = document.getElementById('activation-key-container');
     keyContainer.classList.add('d-none');
     if (req.requestType === 'Borrow License') {
         keyContainer.classList.remove('d-none');
     }
 
     // Load Computer Specs if assigned
-    const specContainer = document.getElementById('computer-specs-container');
+    var specContainer = document.getElementById('computer-specs-container');
     specContainer.classList.add('d-none');
     if (req.preferredComputer && req.preferredComputer !== 'Auto Assign') {
         specContainer.classList.remove('d-none');
         document.getElementById('spec-name').textContent = req.preferredComputer;
 
-        try {
-            const res = await api.jsonpRequest('admin-get-computer-details', { computerName: req.preferredComputer });
-            if (res.success && res.data) {
-                document.getElementById('spec-anydesk').textContent = res.data.anydeskId || '-';
-                document.getElementById('spec-ip').textContent = res.data.ipAddress || '-';
-                document.getElementById('spec-location').textContent = res.data.location || '-';
-            }
-        } catch (e) {
-            console.warn("Failed to load computer details:", e);
-        }
+        api.jsonpRequest('admin-get-computer-details', { computerName: req.preferredComputer })
+            .then(function (res) {
+                if (res.success && res.data) {
+                    document.getElementById('spec-anydesk').textContent = res.data.anydeskId || '-';
+                    document.getElementById('spec-ip').textContent = res.data.ipAddress || '-';
+                    document.getElementById('spec-location').textContent = res.data.location || '-';
+                }
+            })
+            .catch(function (e) {
+                console.warn("Failed to load computer details:", e);
+            });
     }
 
     processModalObj.show();
 }
 
-async function submitApproval() {
+function submitApproval() {
     if (!document.getElementById('check-doc').checked) {
         alert("Mohon verifikasi kelengkapan dokumen terlebih dahulu.");
         return;
     }
 
-    const data = {
+    var data = {
         requestId: currentRequest.requestId,
         expirationDate: document.getElementById('expiration-date-input').value,
         adminNotes: document.getElementById('admin-notes').value,
@@ -398,44 +411,48 @@ async function submitApproval() {
     };
 
     showLoading("Memproses Approval...");
-    try {
-        const res = await api.jsonpRequest('admin-approve', data);
-        if (res.success) {
-            alert("Permohonan berhasil disetujui.");
-            processModalObj.hide();
-            loadRequests();
-        } else {
-            alert("Gagal: " + res.message);
-        }
-    } catch (err) {
-        alert("Error: " + err.message);
-    } finally {
-        hideLoading();
-    }
+    api.jsonpRequest('admin-approve', data)
+        .then(function (res) {
+            if (res.success) {
+                alert("Permohonan berhasil disetujui.");
+                processModalObj.hide();
+                loadRequests();
+            } else {
+                alert("Gagal: " + res.message);
+            }
+        })
+        .catch(function (err) {
+            alert("Error: " + err.message);
+        })
+        .finally(function () {
+            hideLoading();
+        });
 }
 
-async function submitRejection() {
-    const reason = prompt("Masukkan alasan penolakan:");
+function submitRejection() {
+    var reason = prompt("Masukkan alasan penolakan:");
     if (!reason) return;
 
     showLoading("Memproses Penolakan...");
-    try {
-        const res = await api.jsonpRequest('admin-reject', {
-            requestId: currentRequest.requestId,
-            reason: reason
+    api.jsonpRequest('admin-reject', {
+        requestId: currentRequest.requestId,
+        reason: reason
+    })
+        .then(function (res) {
+            if (res.success) {
+                alert("Permohonan telah ditolak.");
+                processModalObj.hide();
+                loadRequests();
+            } else {
+                alert("Gagal: " + res.message);
+            }
+        })
+        .catch(function (err) {
+            alert("Error: " + err.message);
+        })
+        .finally(function () {
+            hideLoading();
         });
-        if (res.success) {
-            alert("Permohonan telah ditolak.");
-            processModalObj.hide();
-            loadRequests();
-        } else {
-            alert("Gagal: " + res.message);
-        }
-    } catch (err) {
-        alert("Error: " + err.message);
-    } finally {
-        hideLoading();
-    }
 }
 
 window.openProcessModal = openProcessModal;
@@ -445,9 +462,9 @@ window.submitRejection = submitRejection;
 /**
  * --- EXPIRED USAGE LOGIC ---
  */
-let expiredModalObj = null;
+var expiredModalObj = null;
 
-async function showExpiredModal() {
+function showExpiredModal() {
     if (!expiredModalObj) {
         expiredModalObj = new bootstrap.Modal(document.getElementById('expiredModal'));
     }
@@ -455,64 +472,65 @@ async function showExpiredModal() {
     loadExpiredUsage();
 }
 
-async function loadExpiredUsage() {
-    const tbody = document.getElementById('expiredTableBody');
+function loadExpiredUsage() {
+    var tbody = document.getElementById('expiredTableBody');
     tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3">Memuat data...</td></tr>';
 
-    try {
-        const res = await api.jsonpRequest('admin-expired-usage');
-        if (res.success && res.data) {
-            renderExpiredTable(res.data);
-        } else {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3">Tidak ada data expired.</td></tr>';
-        }
-    } catch (err) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-3">Gagal memuat data.</td></tr>';
-    }
+    api.jsonpRequest('admin-expired-usage')
+        .then(function (res) {
+            if (res.success && res.data) {
+                renderExpiredTable(res.data);
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3">Tidak ada data expired.</td></tr>';
+            }
+        })
+        .catch(function (err) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-3">Gagal memuat data.</td></tr>';
+        });
 }
 
 function renderExpiredTable(data) {
-    const tbody = document.getElementById('expiredTableBody');
+    var tbody = document.getElementById('expiredTableBody');
     tbody.innerHTML = '';
 
-    data.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>
-                <div class="fw-bold">${item.nama}</div>
-                <div class="extra-small text-muted">${item.email}</div>
-            </td>
-            <td>
-                <div class="small fw-bold">${item.software}</div>
-                <div class="extra-small text-muted">${item.computer} (${item.room})</div>
-            </td>
-            <td class="text-danger fw-bold small">${item.expirationDate}</td>
-            <td class="text-center">
-                <button class="btn btn-outline-danger btn-sm" onclick="handleRevoke('${item.requestId}', '${item.nama}', ${item.rowIndex})">Revoke</button>
-            </td>
-        `;
+    data.forEach(function (item) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' +
+            '<div class="fw-bold">' + item.nama + '</div>' +
+            '<div class="extra-small text-muted">' + item.email + '</div>' +
+            '</td>' +
+            '<td>' +
+            '<div class="small fw-bold">' + item.software + '</div>' +
+            '<div class="extra-small text-muted">' + item.computer + ' (' + item.room + ')</div>' +
+            '</td>' +
+            '<td class="text-danger fw-bold small">' + item.expirationDate + '</td>' +
+            '<td class="text-center">' +
+            '<button class="btn btn-outline-danger btn-sm" onclick="handleRevoke(\'' + item.requestId + '\', \'' + item.nama + '\', ' + item.rowIndex + ')">Revoke</button>' +
+            '</td>';
         tbody.appendChild(tr);
     });
 }
 
-async function handleRevoke(requestId, name, rowIndex) {
-    if (!confirm(`Cabut akses untuk ${name}? Komputer akan dijadwalkan maintenance.`)) return;
+function handleRevoke(requestId, name, rowIndex) {
+    if (!confirm("Cabut akses untuk " + name + "? Komputer akan dijadwalkan maintenance.")) return;
 
     showLoading("Revoking Access...");
-    try {
-        const res = await api.jsonpRequest('admin-revoke', { requestId, rowIndex });
-        if (res.success) {
-            alert("Akses berhasil dicabut.");
-            loadExpiredUsage();
-            loadRequests();
-        } else {
-            alert("Gagal: " + res.message);
-        }
-    } catch (err) {
-        alert("Error: " + err.message);
-    } finally {
-        hideLoading();
-    }
+    api.jsonpRequest('admin-revoke', { requestId: requestId, rowIndex: rowIndex })
+        .then(function (res) {
+            if (res.success) {
+                alert("Akses berhasil dicabut.");
+                loadExpiredUsage();
+                loadRequests();
+            } else {
+                alert("Gagal: " + res.message);
+            }
+        })
+        .catch(function (err) {
+            alert("Error: " + err.message);
+        })
+        .finally(function () {
+            hideLoading();
+        });
 }
 
 window.showExpiredModal = showExpiredModal;
@@ -521,9 +539,9 @@ window.handleRevoke = handleRevoke;
 /**
  * --- AGENDA MANAGEMENT ---
  */
-let agendaModalObj = null;
+var agendaModalObj = null;
 
-async function openAgendaModal() {
+function openAgendaModal() {
     if (!agendaModalObj) {
         agendaModalObj = new bootstrap.Modal(document.getElementById('agendaModal'));
     }
@@ -531,42 +549,41 @@ async function openAgendaModal() {
     agendaModalObj.show();
 }
 
-async function refreshAgendaList() {
-    const tbody = document.getElementById('agenda-list');
+function refreshAgendaList() {
+    var tbody = document.getElementById('agenda-list');
     if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3 small">Memuat data agenda...</td></tr>';
 
-    try {
-        const res = await api.jsonpRequest('admin-agendas');
-        if (!tbody) return;
-        const agendas = res.data || [];
+    api.jsonpRequest('admin-agendas')
+        .then(function (res) {
+            if (!tbody) return;
+            var agendas = res.data || [];
 
-        if (agendas.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3 small">Tidak ada agenda mendatang</td></tr>';
-            return;
-        }
+            if (agendas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3 small">Tidak ada agenda mendatang</td></tr>';
+                return;
+            }
 
-        tbody.innerHTML = agendas.map(a => {
-            return `
-                <tr>
-                    <td class="fw-bold text-primary">${a.ruangan}</td>
-                    <td>${a.kegiatan}</td>
-                    <td><div class="small">${a.mulai} - ${a.selesai}</div></td>
-                    <td class="text-center">
-                        <div class="d-flex justify-content-center gap-1">
-                            <button class="btn btn-outline-danger btn-sm rounded-circle p-1" style="width:24px; height:24px; display:flex; align-items:center; justify-content:center;" onclick="handleHapusAgenda(${a.rowIndex})" title="Hapus">❌</button>
-                            <button class="btn btn-outline-warning btn-sm rounded-circle p-1" style="width:24px; height:24px; display:flex; align-items:center; justify-content:center;" onclick="handleBroadcastAgenda(${a.rowIndex})" title="Siarkan Pengingat">📢</button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    } catch (err) {
-        if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-3 small">Error memuat data</td></tr>';
-    }
+            tbody.innerHTML = agendas.map(function (a) {
+                return '<tr>' +
+                    '<td class="fw-bold text-primary">' + a.ruangan + '</td>' +
+                    '<td>' + a.kegiatan + '</td>' +
+                    '<td><div class="small">' + a.mulai + ' - ' + a.selesai + '</div></td>' +
+                    '<td class="text-center">' +
+                    '<div class="d-flex justify-content-center gap-1">' +
+                    '<button class="btn btn-outline-danger btn-sm rounded-circle p-1" style="width:24px; height:24px; display:flex; align-items:center; justify-content:center;" onclick="handleHapusAgenda(' + a.rowIndex + ')" title="Hapus">❌</button>' +
+                    '<button class="btn btn-outline-warning btn-sm rounded-circle p-1" style="width:24px; height:24px; display:flex; align-items:center; justify-content:center;" onclick="handleBroadcastAgenda(' + a.rowIndex + ')" title="Siarkan Pengingat">📢</button>' +
+                    '</div>' +
+                    '</td>' +
+                    '</tr>';
+            }).join('');
+        })
+        .catch(function (err) {
+            if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-3 small">Error memuat data</td></tr>';
+        });
 }
 
-async function handleSimpanAgenda() {
-    const data = {
+function handleSimpanAgenda() {
+    var data = {
         ruangan: document.getElementById('agenda-ruangan').value,
         kegiatan: document.getElementById('agenda-kegiatan').value,
         mulai: document.getElementById('agenda-mulai').value,
@@ -575,56 +592,62 @@ async function handleSimpanAgenda() {
     };
 
     showLoading("Menyimpan Agenda...");
-    try {
-        const res = await api.jsonpRequest('admin-save-agenda', data);
-        if (res.success) {
-            alert("Agenda berhasil disimpan.");
-            document.getElementById('agendaForm').reset();
-            refreshAgendaList();
-        } else {
-            alert("Gagal: " + res.message);
-        }
-    } catch (err) {
-        alert("Error: " + err.message);
-    } finally {
-        hideLoading();
-    }
+    api.jsonpRequest('admin-save-agenda', data)
+        .then(function (res) {
+            if (res.success) {
+                alert("Agenda berhasil disimpan.");
+                document.getElementById('agendaForm').reset();
+                refreshAgendaList();
+            } else {
+                alert("Gagal: " + res.message);
+            }
+        })
+        .catch(function (err) {
+            alert("Error: " + err.message);
+        })
+        .finally(function () {
+            hideLoading();
+        });
 }
 
-async function handleHapusAgenda(rowIndex) {
+function handleHapusAgenda(rowIndex) {
     if (!confirm("Hapus agenda ini?")) return;
 
     showLoading("Menghapus...");
-    try {
-        const res = await api.jsonpRequest('admin-delete-agenda', { rowIndex: rowIndex });
-        if (res.success) {
-            refreshAgendaList();
-        } else {
-            alert("Gagal: " + res.message);
-        }
-    } catch (err) {
-        alert("Error: " + err.message);
-    } finally {
-        hideLoading();
-    }
+    api.jsonpRequest('admin-delete-agenda', { rowIndex: rowIndex })
+        .then(function (res) {
+            if (res.success) {
+                refreshAgendaList();
+            } else {
+                alert("Gagal: " + res.message);
+            }
+        })
+        .catch(function (err) {
+            alert("Error: " + err.message);
+        })
+        .finally(function () {
+            hideLoading();
+        });
 }
 
-async function handleBroadcastAgenda(rowIndex) {
+function handleBroadcastAgenda(rowIndex) {
     if (!confirm("Siarkan pengingat agenda ke pengguna terkait?")) return;
 
     showLoading("Broadcasting...");
-    try {
-        const res = await api.jsonpRequest('admin-broadcast-agenda', { rowIndex: rowIndex });
-        if (res.success) {
-            alert(`Broadcast terkirim ke ${res.count} pengguna.`);
-        } else {
-            alert("Gagal: " + res.message);
-        }
-    } catch (err) {
-        alert("Error: " + err.message);
-    } finally {
-        hideLoading();
-    }
+    api.jsonpRequest('admin-broadcast-agenda', { rowIndex: rowIndex })
+        .then(function (res) {
+            if (res.success) {
+                alert("Broadcast terkirim ke " + res.count + " pengguna.");
+            } else {
+                alert("Gagal: " + res.message);
+            }
+        })
+        .catch(function (err) {
+            alert("Error: " + err.message);
+        })
+        .finally(function () {
+            hideLoading();
+        });
 }
 
 window.openAgendaModal = openAgendaModal;
@@ -635,35 +658,36 @@ window.handleBroadcastAgenda = handleBroadcastAgenda;
 /**
  * --- BRANDING LOGIC (Milestone 11) ---
  */
-async function loadAppBranding() {
-    try {
-        const res = await api.getBranding();
-        if (res.success && res.data) {
-            setupBranding(res.data);
-        }
-    } catch (e) {
-        console.warn('Error loading branding:', e);
-    }
+function loadAppBranding() {
+    api.getBranding()
+        .then(function (res) {
+            if (res.success && res.data) {
+                setupBranding(res.data);
+            }
+        })
+        .catch(function (e) {
+            console.warn('Error loading branding:', e);
+        });
 }
 
 function setupBranding(data) {
     if (!data) return;
 
-    // Set logos
-    const logoEls = document.querySelectorAll('#app-logo, #login-logo');
+    var logoEls = document.querySelectorAll('#app-logo, #login-logo');
     if (data.logo) {
-        let logoSrc = data.logo;
-        if (logoSrc.trim() && !logoSrc.startsWith('http') && !logoSrc.startsWith('data:')) {
+        var logoSrc = data.logo;
+        if (logoSrc.trim() && logoSrc.indexOf('http') !== 0 && logoSrc.indexOf('data:') !== 0) {
             logoSrc = 'data:image/png;base64,' + logoSrc;
         }
-        logoEls.forEach(el => { el.src = logoSrc; });
+        for (var i = 0; i < logoEls.length; i++) {
+            logoEls[i].src = logoSrc;
+        }
     }
 
-    // Set QR code (optional for admin but kept for consistency)
-    const qrEl = document.getElementById('app-qr');
+    var qrEl = document.getElementById('app-qr');
     if (data.qr && qrEl) {
-        let qrSrc = data.qr;
-        if (qrSrc.trim() && !qrSrc.startsWith('http') && !qrSrc.startsWith('data:')) {
+        var qrSrc = data.qr;
+        if (qrSrc.trim() && qrSrc.indexOf('http') !== 0 && qrSrc.indexOf('data:') !== 0) {
             qrSrc = 'data:image/png;base64,' + qrSrc;
         }
         qrEl.src = qrSrc;
@@ -672,13 +696,13 @@ function setupBranding(data) {
 
 // Loading UI Helpers
 function showLoading(text) {
-    const overlay = document.getElementById('loading-overlay');
-    const textEl = document.getElementById('loading-text');
+    var overlay = document.getElementById('loading-overlay');
+    var textEl = document.getElementById('loading-text');
     if (overlay) overlay.style.display = 'flex';
     if (textEl) textEl.textContent = text;
 }
 
 function hideLoading() {
-    const overlay = document.getElementById('loading-overlay');
+    var overlay = document.getElementById('loading-overlay');
     if (overlay) overlay.style.display = 'none';
 }
