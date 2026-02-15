@@ -84,6 +84,9 @@ APIClient.prototype.jsonpRequest = function (path, params) {
 
         var finalURL = cleanBaseURL + (cleanBaseURL.indexOf('?') === -1 ? '?' : '&') + queryString + '&_t=' + Date.now();
         console.log('JSONP Request attempt:', finalURL);
+
+        // Force anonymous request to avoid Google Multiple-Account redirect issues
+        script.crossOrigin = 'anonymous';
         script.src = finalURL;
 
         var timeout = setTimeout(function () {
