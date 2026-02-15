@@ -386,11 +386,11 @@ function handleSoftwareChange() {
 
         } else if (result.needsBorrowKey) {
             warningDiv.classList.remove('d-none');
-            warningText.innerHTML = '<strong>Borrow License:</strong> Software ini dapat diinstal di laptop pribadi, namun Anda memerlukan Borrow Key yang akan dikirim via email.';
+            warningText.innerHTML = '<strong>Borrow License:</strong> Software ini memerlukan Borrow Key yang akan dikirim via email. Serta koneksi jaringan internal UGM atau VPN UGM saat melakukan proses aktivasinya.';
             document.getElementById('needsComputerNo').disabled = false;
         } else if (requiresNetwork) {
             warningDiv.classList.remove('d-none');
-            warningText.innerHTML = '<strong>Info Jaringan:</strong> Gunakan VPN UGM atau koneksi internal UGM untuk mengaktifkan lisensi software ini di laptop pribadi.';
+            warningText.innerHTML = '<strong>Info Jaringan:</strong> Gunakan VPN UGM atau koneksi jaringan internal UGM untuk menggunakan lisensi software ini di komputer pribadi.';
             document.getElementById('needsComputerNo').disabled = false;
         } else {
             warningDiv.classList.add('d-none');
@@ -402,7 +402,7 @@ function handleSoftwareChange() {
             opt.disabled = allowedRooms.length > 0 && allowedRooms.indexOf(opt.value) === -1;
         });
         if (result.success === false) {
-            alert('Peringatan: Software yang Anda pilih memiliki batasan akses yang tidak kompatibel.');
+            alert('Peringatan: Software yang Anda pilih memiliki batasan akses yang tidak kompatibel. Silahkan dikirimkan secara terpisah.');
         }
 
         // Calibrate Tipe Akses
