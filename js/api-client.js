@@ -82,7 +82,7 @@ APIClient.prototype.jsonpRequest = function (path, params) {
             }
         }
 
-        var finalURL = cleanBaseURL + (cleanBaseURL.indexOf('?') === -1 ? '?' : '&') + queryString;
+        var finalURL = cleanBaseURL + (cleanBaseURL.indexOf('?') === -1 ? '?' : '&') + queryString + '&_t=' + Date.now();
         console.log('JSONP Request attempt:', finalURL);
         script.src = finalURL;
 
