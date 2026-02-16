@@ -87,6 +87,7 @@ function showDashboard() {
     document.getElementById('dashboard-app').style.display = 'block';
     document.getElementById('user-display-name').textContent = currentUser.nama;
     loadRequests();
+    checkExpiringLicenses(); // Milestone 10
 }
 
 function showLogin() {
@@ -765,4 +766,41 @@ function showLoading(text) {
 function hideLoading() {
     var overlay = document.getElementById('loading-overlay');
     if (overlay) overlay.style.display = 'none';
+}
+/**
+ * LICENSE EXPIRATION MONITORING (Milestone 10)
+ */
+function checkExpiringLicenses() {
+    api.jsonpRequest('admin-expiring-licenses')
+        .then(function (res) {
+            if (res.success && res.data && res.data.length > 0) {
+                renderExpirationBanner(res.data);
+            }
+        })
+        .catch(function (err) {
+            console.warn("Failed to check expiring licenses:", err);
+        });
+}
+
+function renderExpirationBanner(licenses) {
+    var container = document.getElementById('license-banner-container');
+    if (!container) return;
+
+    var html = '<div class="alert alert-warning alert-dismissible fade show shadow-sm border-start border-warning border-5" role="alert" style="border-radius: 12px; margin-bottom: 2rem;">' +
+        '<div class="d-flex align-items-center">' +
+        '<div class="fs-4 me-3">⚠️</div>' +
+        '<div>' +
+        '<strong class="outfit">Peringatan Lisensi:</strong> ' + licenses.length + ' software akan berakhir dalam waktu dekat.' +
+        '<div class="small mt-1">';
+
+    licenses.forEach(function (lic, idx) {
+        var badgeColor = lic.daysLeft < 7 ? 'bg-danger' : 'bg-warning text-dark';
+        html += '<span class="badge ' + badgeColor + ' me-2 mb-1">' + lic.name + ' (' + lic.daysLeft + ' hari)</span>';
+    });
+
+    html += '</div></div></div>' +
+        '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+        '</div>';
+
+    container.innerHTML = html;
 }
