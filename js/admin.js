@@ -443,7 +443,7 @@ function openProcessModal(requestId) {
         if (activationKeyLabel) activationKeyLabel.textContent = "Borrow License Filter / Code";
     }
 
-    if (req.computerRoomPreference === 'Ruang Penelitian') {
+    if (req.roomPreference === 'Ruang Penelitian') {
         if (anydeskPasswordContainer) anydeskPasswordContainer.classList.remove('d-none');
     }
 
@@ -472,7 +472,7 @@ function openProcessModal(requestId) {
                     document.getElementById('spec-location').textContent = res.data.location || '-';
 
                     // Auto-populate password if it's for Ruang Penelitian
-                    if (req.computerRoomPreference === 'Ruang Penelitian' && anydeskPasswordInput) {
+                    if (req.roomPreference === 'Ruang Penelitian' && anydeskPasswordInput) {
                         anydeskPasswordInput.value = res.data.anydeskPassword || '';
 
                         // If password is empty in sheet, suggest generating one
