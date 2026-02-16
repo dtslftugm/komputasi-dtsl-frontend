@@ -135,6 +135,11 @@ function loadRequests() {
 
                 renderTable();
 
+                // Render Active Users
+                if (res.activeUsers) {
+                    renderActiveUsersTable(res.activeUsers);
+                }
+
                 // Load Maintenance if stats show some
                 if (res.stats && res.stats.labMaintenance > 0) {
                     loadMaintenanceList();
@@ -186,6 +191,40 @@ function renderTable(filter) {
     });
 }
 
+function renderActiveUsersTable(users) {
+    var tbody = document.getElementById('activeUsersTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted">Tidak ada user aktif.</td></tr>';
+        return;
+    }
+
+    users.forEach(function (user) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' +
+            '<div class="fw-bold">' + (user.nama || "-") + '</div>' +
+            '<div class="text-muted small">' + (user.nim || "-") + ' | ' + (user.email || "-") + '</div>' +
+            '</td>' +
+            '<td>' +
+            '<div class="small">' + (user.software || '-') + '</div>' +
+            '</td>' +
+            '<td>' +
+            '<div class="fw-bold small">' + (user.requestId || '-') + '</div>' +
+            '<div class="text-danger extra-small">Berakhir: ' + (user.expiredOn || '-') + '</div>' +
+            '</td>';
+        tbody.appendChild(tr);
+    });
+}
+
+function scrollToActiveUsers() {
+    var section = document.getElementById('active-users-section');
+    if (section) {
+        section.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
 /**
  * --- MAINTENANCE LOGIC ---
  */
@@ -208,17 +247,13 @@ function loadMaintenanceList() {
 }
 
 function renderMaintenanceTable(data) {
-    var tbodyInline = document.getElementById('maintenanceSectionBody');
-    var tbodyModal = document.getElementById('maintenanceTableBody');
+    var tbody = document.getElementById('maintenanceSectionBody');
+    if (!tbody) return;
 
-    // Clear both if they exist
-    if (tbodyInline) tbodyInline.innerHTML = '';
-    if (tbodyModal) tbodyModal.innerHTML = '';
+    tbody.innerHTML = '';
 
     if (!data || data.length === 0) {
-        var emptyHtml = '<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada data maintenance.</td></tr>';
-        if (tbodyInline) tbodyInline.innerHTML = emptyHtml;
-        if (tbodyModal) tbodyModal.innerHTML = emptyHtml;
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada data maintenance.</td></tr>';
         return;
     }
 
@@ -241,10 +276,11 @@ function renderMaintenanceTable(data) {
                 '<input class="form-check-input border-info" type="checkbox" id="check-license-' + item.requestId + '">' +
                 '<label class="form-check-label" for="check-license-' + item.requestId + '">Hapus dari Cloud Vendor Dashboard</label>' +
                 '</div>';
-            actionBtn = '<button class="btn btn-info btn-sm rounded-pill px-3 text-white" onclick="handleFinishLicenseCleanup(\'' + item.requestId + '\', ' + item.rowIndex + ')">Lisensi OK</button>';
+            actionBtn = '<button class="btn btn-info btn-sm rounded-pill px-3 text-white" onclick="handleFinishLicenseCleanup(\'' + item.requestId + '\')">Lisensi OK</button>';
         }
 
-        var rowHtml = '<td>' +
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' +
             '<span class="badge ' + (item.type === 'PC' ? 'bg-warning text-dark' : 'bg-info text-white') + ' me-2">' + item.type + '</span>' +
             '<span class="fw-bold">' + item.targetName + '</span>' +
             '</td>' +
@@ -259,25 +295,15 @@ function renderMaintenanceTable(data) {
             '<td>' + checklistHtml + '</td>' +
             '<td class="text-center">' + actionBtn + '</td>';
 
-        if (tbodyInline) {
-            var trInline = document.createElement('tr');
-            trInline.innerHTML = rowHtml;
-            tbodyInline.appendChild(trInline);
-        }
-        if (tbodyModal) {
-            var trModal = document.createElement('tr');
-            trModal.innerHTML = rowHtml;
-            tbodyModal.appendChild(trModal);
-        }
+        tbody.appendChild(tr);
     });
 }
 
-function showMaintenanceModal() {
-    if (!maintenanceModalObj) {
-        maintenanceModalObj = new bootstrap.Modal(document.getElementById('maintenanceModal'));
+function scrollToMaintenance() {
+    var section = document.getElementById('maintenance-container');
+    if (section) {
+        section.scrollIntoView({ behavior: 'smooth' });
     }
-    loadMaintenanceList();
-    maintenanceModalObj.show();
 }
 
 function handleFinishPCMaintenance(computerName) {
@@ -298,7 +324,6 @@ function handleFinishPCMaintenance(computerName) {
                 .then(function (res) {
                     if (res.success) {
                         ui.success("Berhasil: PC sudah tersedia kembali.");
-                        if (maintenanceModalObj) maintenanceModalObj.hide();
                         loadRequests();
                     } else {
                         ui.error("Gagal: " + res.message);
@@ -330,7 +355,6 @@ function handleFinishLicenseCleanup(requestId) {
                 .then(function (res) {
                     if (res.success) {
                         ui.success("Berhasil: Tugas cleanup selesai.");
-                        if (maintenanceModalObj) maintenanceModalObj.hide();
                         loadRequests();
                     } else {
                         ui.error("Gagal: " + res.message);
