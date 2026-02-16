@@ -395,11 +395,11 @@ function handleSoftwareChange() {
 
         } else if (result.needsBorrowKey) {
             warningDiv.classList.remove('d-none');
-            warningText.innerHTML = '<strong>Borrow License:</strong> Software ini memerlukan Borrow Key yang akan dikirim via email. Serta koneksi jaringan internal UGM atau VPN UGM saat melakukan proses aktivasinya.';
+            warningText.innerHTML = '<strong>Borrow License:</strong> Software ini memerlukan Borrow Key yang akan dikirim via email. Proses aktivasi harus menggunakan jaringan internal UGM atau VPN UGM. Borrow Key dapat digunakan maksimal selama 180 hari.';
             document.getElementById('needsComputerNo').disabled = false;
         } else if (requiresNetwork) {
             warningDiv.classList.remove('d-none');
-            warningText.innerHTML = '<strong>Info Jaringan:</strong> Gunakan VPN UGM atau koneksi jaringan internal UGM untuk menggunakan lisensi software ini di komputer pribadi.';
+            warningText.innerHTML = '<strong>PENTING:</strong> Gunakan koneksi jaringan internal UGM atau VPN UGM untuk menggunakan lisensi software ini di komputer pribadi.';
             document.getElementById('needsComputerNo').disabled = false;
         } else {
             warningDiv.classList.add('d-none');

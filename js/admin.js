@@ -428,21 +428,40 @@ function openProcessModal(requestId) {
     expDate.setDate(expDate.getDate() + days);
     document.getElementById('expiration-date-input').value = expDate.toISOString().split('T')[0];
 
-    // Activation Key handling (Fixed in Milestone 9)
-    var keyContainer = document.getElementById('activation-key-container');
-    if (keyContainer) {
-        if (req.needsKey) {
-            keyContainer.classList.remove('d-none');
-        } else {
-            keyContainer.classList.add('d-none');
-        }
+    // Room Preference logic
+    var activationKeyContainer = document.getElementById('activation-key-container');
+    var activationKeyLabel = document.getElementById('activation-key-label');
+    var anydeskPasswordContainer = document.getElementById('anydesk-password-container');
+    var anydeskPasswordInput = document.getElementById('anydesk-password-input');
+
+    if (activationKeyContainer) activationKeyContainer.classList.add('d-none');
+    if (anydeskPasswordContainer) anydeskPasswordContainer.classList.add('d-none');
+    if (anydeskPasswordInput) anydeskPasswordInput.value = '';
+
+    if (req.needsKey) {
+        if (activationKeyContainer) activationKeyContainer.classList.remove('d-none');
+        if (activationKeyLabel) activationKeyLabel.textContent = "Borrow License Filter / Code";
+    }
+
+    if (req.computerRoomPreference === 'Ruang Penelitian') {
+        if (anydeskPasswordContainer) anydeskPasswordContainer.classList.remove('d-none');
     }
 
     // Load Computer Specs if assigned
     var specContainer = document.getElementById('computer-specs-container');
+    var winUserContainer = document.getElementById('check-win-user-container');
+
     specContainer.classList.add('d-none');
+    if (winUserContainer) {
+        winUserContainer.classList.add('d-none');
+        document.getElementById('id-check-win-user').checked = false;
+    }
+
     if (req.preferredComputer && req.preferredComputer !== 'Auto Assign') {
         specContainer.classList.remove('d-none');
+        if (winUserContainer && req.requestType === 'Personal Computer') {
+            winUserContainer.classList.remove('d-none');
+        }
         document.getElementById('spec-name').textContent = req.preferredComputer;
 
         api.jsonpRequest('admin-get-computer-details', { computerName: req.preferredComputer })
@@ -451,6 +470,24 @@ function openProcessModal(requestId) {
                     document.getElementById('spec-anydesk').textContent = res.data.anydeskId || '-';
                     document.getElementById('spec-ip').textContent = res.data.ipAddress || '-';
                     document.getElementById('spec-location').textContent = res.data.location || '-';
+
+                    // Auto-populate password if it's for Ruang Penelitian
+                    if (req.computerRoomPreference === 'Ruang Penelitian' && anydeskPasswordInput) {
+                        anydeskPasswordInput.value = res.data.anydeskPassword || '';
+
+                        // If password is empty in sheet, suggest generating one
+                        if (!anydeskPasswordInput.value) {
+                            api.jsonpRequest('admin-generate-anydesk-password', {
+                                computerName: req.preferredComputer,
+                                dateStr: req.timestamp
+                            })
+                                .then(function (pRes) {
+                                    if (pRes.success && !anydeskPasswordInput.value) {
+                                        anydeskPasswordInput.value = pRes.data;
+                                    }
+                                });
+                        }
+                    }
                 }
             })
             .catch(function (e) {
@@ -467,11 +504,20 @@ function submitApproval() {
         return;
     }
 
+    var winUserContainer = document.getElementById('check-win-user-container');
+    if (winUserContainer && !winUserContainer.classList.contains('d-none')) {
+        if (!document.getElementById('id-check-win-user').checked) {
+            ui.warning("Mohon verifikasi pembuatan Windows User terlebih dahulu.", "Verifikasi User");
+            return;
+        }
+    }
+
     var data = {
         requestId: currentRequest.requestId,
         customExpirationDate: document.getElementById('expiration-date-input').value,
         adminNotes: document.getElementById('admin-notes').value,
-        activationKey: document.getElementById('activation-key-input').value
+        activationKey: document.getElementById('activation-key-input').value,
+        anydeskPassword: document.getElementById('anydesk-password-input') ? document.getElementById('anydesk-password-input').value : ""
     };
 
     showLoading("Memproses Approval...");
@@ -490,6 +536,9 @@ function submitApproval() {
 
                 var docCheck = document.getElementById('check-doc');
                 if (docCheck) docCheck.checked = false;
+
+                var winUserCheck = document.getElementById('id-check-win-user');
+                if (winUserCheck) winUserCheck.checked = false;
 
                 loadRequests();
             } else {
