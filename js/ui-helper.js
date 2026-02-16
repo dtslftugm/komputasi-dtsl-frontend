@@ -224,7 +224,10 @@ var ui = {
 
     _injectStyles: function () {
         var css = '.toast { font-family: "Outfit", sans-serif; border-radius: 12px; }' +
-            '.modal-content { font-family: "Outfit", sans-serif; }';
+            '.modal-content { font-family: "Outfit", sans-serif; background-color: var(--bg-container, #fff) !important; color: var(--text-main, #333) !important; border: 1px solid var(--border-color, #dee2e6) !important; }' +
+            '.modal-header, .modal-footer { border-color: var(--border-color, #dee2e6) !important; }' +
+            'body:not(.light-mode) .btn-close:not(.btn-close-white) { filter: invert(1) grayscale(100%) brightness(200%); }' +
+            '.modal-body { color: inherit !important; }';
         var style = document.createElement('style');
         style.appendChild(document.createTextNode(css));
         document.head.appendChild(style);

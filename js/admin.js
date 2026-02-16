@@ -401,11 +401,14 @@ function openProcessModal(requestId) {
     expDate.setDate(expDate.getDate() + days);
     document.getElementById('expiration-date-input').value = expDate.toISOString().split('T')[0];
 
-    // Activation Key handling (simplified for now)
+    // Activation Key handling (Fixed in Milestone 9)
     var keyContainer = document.getElementById('activation-key-container');
-    keyContainer.classList.add('d-none');
-    if (req.requestType === 'Borrow License') {
-        keyContainer.classList.remove('d-none');
+    if (keyContainer) {
+        if (req.needsKey) {
+            keyContainer.classList.remove('d-none');
+        } else {
+            keyContainer.classList.add('d-none');
+        }
     }
 
     // Load Computer Specs if assigned
@@ -450,6 +453,17 @@ function submitApproval() {
             if (res.success) {
                 ui.success("Permohonan berhasil disetujui.");
                 processModalObj.hide();
+
+                // Clear state (Fixed in Milestone 9)
+                var keyInput = document.getElementById('activation-key-input');
+                if (keyInput) keyInput.value = '';
+
+                var notesInput = document.getElementById('admin-notes');
+                if (notesInput) notesInput.value = '';
+
+                var docCheck = document.getElementById('check-doc');
+                if (docCheck) docCheck.checked = false;
+
                 loadRequests();
             } else {
                 ui.error("Gagal: " + res.message);
