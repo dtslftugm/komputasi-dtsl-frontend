@@ -10,7 +10,6 @@ var sessionToken = localStorage.getItem('adminAuthToken');
 // Modal Objects (Global for access across functions)
 var processModalObj = null;
 var expiredModalObj = null;
-var maintenanceModalObj = null;
 var agendaModalObj = null;
 
 // Initialize
@@ -377,7 +376,7 @@ window.loadRequests = loadRequests;
 window.showSection = function (sectionId) {
     console.log("Switching to section:", sectionId);
 };
-window.showMaintenanceModal = showMaintenanceModal;
+window.scrollToMaintenance = scrollToMaintenance;
 window.handleFinishPCMaintenance = handleFinishPCMaintenance;
 window.handleFinishLicenseCleanup = handleFinishLicenseCleanup;
 
