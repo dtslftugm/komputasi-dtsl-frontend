@@ -716,18 +716,7 @@ function setupBranding(data) {
     }
 }
 
-// Loading UI Helpers
-function showLoading(text) {
-    var overlay = document.getElementById('loading-overlay');
-    var textEl = document.getElementById('loading-text');
-    if (overlay) overlay.style.display = 'flex';
-    if (textEl) textEl.textContent = text;
-}
-
-function hideLoading() {
-    var overlay = document.getElementById('loading-overlay');
-    if (overlay) overlay.style.display = 'none';
-}
+// showLoading and hideLoading are now provided globally by ui-helper.js
 /**
  * LICENSE EXPIRATION MONITORING (Milestone 10)
  */

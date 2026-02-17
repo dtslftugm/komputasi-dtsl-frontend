@@ -167,6 +167,18 @@ var ui = {
     info: function (message) { this.toast(message, 'info'); },
     warning: function (message) { this.toast(message, 'warning'); },
 
+    loading: function (message) {
+        var overlay = document.getElementById('loading-overlay');
+        var textEl = document.getElementById('loading-text');
+        if (overlay) overlay.style.display = 'flex';
+        if (textEl) textEl.textContent = message || 'Memuat...';
+    },
+
+    hideLoading: function () {
+        var overlay = document.getElementById('loading-overlay');
+        if (overlay) overlay.style.display = 'none';
+    },
+
     toast: function (message, type) {
         var container = document.getElementById('ui-toast-container');
         var id = 'toast-' + (++this._toastCount);
@@ -246,3 +258,7 @@ window.nativeAlert = window.alert;
 window.alert = function (msg) {
     ui.alert(msg);
 };
+
+// Global aliases for backward compatibility
+window.showLoading = function (msg) { ui.loading(msg); };
+window.hideLoading = function () { ui.hideLoading(); };
