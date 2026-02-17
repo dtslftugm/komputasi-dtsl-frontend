@@ -25,7 +25,8 @@ function APIClient() {
         'apiSiarkanPengingatAgenda': 'admin-broadcast-agenda',
         'apiGetComputerDetails': 'admin-get-computer-details',
         'apiCompleteLicenseCleanup': 'admin-license-cleanup',
-        'apiSubmitQuisioner': 'submit-quisioner'
+        'apiSubmitQuisioner': 'submit-quisioner',
+        'apiUpdateMaintenanceStatus': 'admin-maintenance-update'
     };
     console.log('APIClient (ES5) initialized');
 }

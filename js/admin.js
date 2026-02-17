@@ -141,7 +141,7 @@ function loadRequests() {
 
                 // Load Maintenance if stats show some
                 if (res.stats && res.stats.labMaintenance > 0) {
-                    loadMaintenanceList();
+                    // Maintenance managed in maintenance.html
                 }
             }
         })
@@ -227,119 +227,6 @@ function scrollToActiveUsers() {
     }
 }
 
-/**
- * --- MAINTENANCE LOGIC ---
- */
-function loadMaintenanceList() {
-    var tbody = document.getElementById('maintenanceSectionBody');
-    if (!tbody) return;
-
-    api.jsonpRequest('admin-maintenance-list')
-        .then(function (res) {
-            if (res.success && res.data) {
-                renderMaintenanceTable(res.data);
-                document.getElementById('maintenance-container').classList.remove('d-none');
-            } else {
-                document.getElementById('maintenance-container').classList.add('d-none');
-            }
-        })
-        .catch(function (err) {
-            console.warn("Failed to load maintenance list:", err);
-        });
-}
-
-function renderMaintenanceTable(data) {
-    var tbody = document.getElementById('maintenanceSectionBody');
-    if (!tbody) return;
-
-    tbody.innerHTML = '';
-
-    if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada data maintenance.</td></tr>';
-        return;
-    }
-
-    data.forEach(function (item) {
-        var checklistHtml = '';
-        var actionBtn = '';
-
-        if (item.type === 'PC') {
-            checklistHtml = '<div class="form-check small mb-1">' +
-                '<input class="form-check-input" type="checkbox" id="check-storage-' + item.targetName + '">' +
-                '<label class="form-check-label" for="check-storage-' + item.targetName + '">Cek Sisa Storage</label>' +
-                '</div>' +
-                '<div class="form-check small mb-1">' +
-                '<input class="form-check-input" type="checkbox" id="check-junk-' + item.targetName + '">' +
-                '<label class="form-check-label" for="check-junk-' + item.targetName + '">Bersihkan File Sampah</label>' +
-                '</div>';
-            actionBtn = '<button class="btn btn-primary btn-sm rounded-pill px-3" onclick="handleFinishPCMaintenance(\'' + item.targetName + '\')">PC OK</button>';
-        } else {
-            checklistHtml = '<div class="form-check small fw-bold text-info">' +
-                '<input class="form-check-input border-info" type="checkbox" id="check-license-' + item.requestId + '">' +
-                '<label class="form-check-label" for="check-license-' + item.requestId + '">Hapus dari Cloud Vendor Dashboard</label>' +
-                '</div>';
-            actionBtn = '<button class="btn btn-info btn-sm rounded-pill px-3 text-white" onclick="handleFinishLicenseCleanup(\'' + item.requestId + '\')">Lisensi OK</button>';
-        }
-
-        var tr = document.createElement('tr');
-        tr.innerHTML = '<td>' +
-            '<span class="badge ' + (item.type === 'PC' ? 'bg-warning text-dark' : 'bg-info text-white') + ' me-2">' + item.type + '</span>' +
-            '<span class="fw-bold">' + item.targetName + '</span>' +
-            '</td>' +
-            '<td>' +
-            '<div class="small fw-bold">' + (item.lastUser || '-') + '</div>' +
-            '<div class="text-muted extra-small">ID: ' + (item.requestId || '-') + '</div>' +
-            '</td>' +
-            '<td>' +
-            '<div class="small">' + (item.dateRef || '-') + '</div>' +
-            '<div class="extra-small text-danger">' + (item.daysAgo || 0) + ' hari lalu</div>' +
-            '</td>' +
-            '<td>' + checklistHtml + '</td>' +
-            '<td class="text-center">' + actionBtn + '</td>';
-
-        tbody.appendChild(tr);
-    });
-}
-
-function scrollToMaintenance() {
-    var section = document.getElementById('maintenance-container');
-    if (section) {
-        section.scrollIntoView({ behavior: 'smooth' });
-    }
-}
-
-function handleFinishPCMaintenance(computerName) {
-    var checkStorage = document.getElementById('check-storage-' + computerName);
-    var checkJunk = document.getElementById('check-junk-' + computerName);
-
-    if (!checkStorage || !checkJunk || !checkStorage.checked || !checkJunk.checked) {
-        ui.warning("Berikan tanda centang pada seluruh tugas (Storage & Junk) yang sudah dikerjakan.", "Ceklis Diperlukan");
-        return;
-    }
-
-    ui.confirm("Status PC " + computerName + " akan diatur menjadi Available. Lanjutkan?", "Selesaikan Maintenance")
-        .then(function (confirmed) {
-            if (!confirmed) return;
-
-            showLoading("Memproses...");
-            api.jsonpRequest('admin-maintenance-complete', { computerName: computerName })
-                .then(function (res) {
-                    if (res.success) {
-                        ui.success("Berhasil: PC sudah tersedia kembali.");
-                        loadRequests();
-                    } else {
-                        ui.error("Gagal: " + res.message);
-                    }
-                })
-                .catch(function (err) {
-                    ui.error("Error: " + err.message);
-                })
-                .finally(function () {
-                    hideLoading();
-                });
-        });
-}
-
 function handleFinishLicenseCleanup(requestId) {
     var checkLicense = document.getElementById('check-license-' + requestId);
 
@@ -353,7 +240,7 @@ function handleFinishLicenseCleanup(requestId) {
             if (!confirmed) return;
 
             showLoading("Memproses...");
-            api.jsonpRequest('admin-license-cleanup', { requestId: requestId })
+            api.run('apiCompleteLicenseCleanup', { requestId: requestId })
                 .then(function (res) {
                     if (res.success) {
                         ui.success("Berhasil: Tugas cleanup selesai.");
@@ -376,8 +263,7 @@ window.loadRequests = loadRequests;
 window.showSection = function (sectionId) {
     console.log("Switching to section:", sectionId);
 };
-window.scrollToMaintenance = scrollToMaintenance;
-window.handleFinishPCMaintenance = handleFinishPCMaintenance;
+window.scrollToActiveUsers = scrollToActiveUsers;
 window.handleFinishLicenseCleanup = handleFinishLicenseCleanup;
 
 /**
