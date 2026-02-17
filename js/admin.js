@@ -879,3 +879,45 @@ function renderExpirationBanner(licenses) {
 
     container.innerHTML = html;
 }
+
+function copyAnydeskCommand(type) {
+    var passInput = document.getElementById('anydesk-password-input');
+    var pass = passInput ? passInput.value.trim() : '';
+    var targetEl = document.getElementById(type === 'id' ? 'spec-anydesk' : 'spec-ip');
+    var target = targetEl ? targetEl.textContent.replace(/\s/g, '') : '';
+
+    if (!target || target === '-') {
+        if (typeof Toast !== 'undefined') Toast.warn("Data Kurang", "ID AnyDesk atau IP Address tidak ditemukan.");
+        return;
+    }
+
+    var cmd = 'echo ' + pass + ' | "C:\\Program Files (x86)\\AnyDesk\\AnyDesk.exe" ' + target + ' --with-password';
+
+    if (typeof Utils !== 'undefined' && Utils.copyToClipboard) {
+        Utils.copyToClipboard(cmd, "Command AnyDesk berhasil disalin ke clipboard.");
+    } else {
+        navigator.clipboard.writeText(cmd).then(function () {
+            if (typeof Toast !== 'undefined') Toast.success("Salin Berhasil", "Command disalin ke clipboard.");
+        });
+    }
+}
+
+function launchAnydesk(type) {
+    var passInput = document.getElementById('anydesk-password-input');
+    var pass = passInput ? passInput.value.trim() : '';
+    var targetEl = document.getElementById(type === 'id' ? 'spec-anydesk' : 'spec-ip');
+    var target = targetEl ? targetEl.textContent.replace(/\s/g, '') : '';
+
+    if (!target || target === '-') {
+        if (typeof Toast !== 'undefined') Toast.warn("Data Kurang", "ID AnyDesk atau IP Address tidak ditemukan.");
+        return;
+    }
+
+    // Copy password to clipboard first
+    navigator.clipboard.writeText(pass).then(function () {
+        window.location.assign('anydesk:' + target);
+        if (typeof Toast !== 'undefined') Toast.info("Membuka AnyDesk", "Password telah disalin ke clipboard.");
+    }).catch(function (err) {
+        if (typeof Toast !== 'undefined') Toast.error("Gagal Salin", "Mohon pastikan halaman menggunakan HTTPS.");
+    });
+}

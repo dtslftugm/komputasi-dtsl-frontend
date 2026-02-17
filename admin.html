@@ -439,7 +439,20 @@
                                 <p class="mb-1 small"><strong>Name:</strong> <span id="spec-name">-</span></p>
                                 <p class="mb-1 small"><strong>AnyDesk ID:</strong> <span id="spec-anydesk">-</span></p>
                                 <p class="mb-1 small"><strong>IP Address:</strong> <span id="spec-ip">-</span></p>
-                                <p class="mb-0 small"><strong>Location:</strong> <span id="spec-location">-</span></p>
+                                <p class="mb-3 small"><strong>Location:</strong> <span id="spec-location">-</span></p>
+
+                                <div class="btn-group w-100 mb-2">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="copyAnydeskCommand('id')">📋
+                                        Cmd Copy (ID)</button>
+                                    <button class="btn btn-outline-secondary btn-sm"
+                                        onclick="copyAnydeskCommand('ip')">📋 Cmd Copy (IP)</button>
+                                </div>
+                                <div class="btn-group w-100">
+                                    <button class="btn btn-primary btn-sm" onclick="launchAnydesk('id')">🚀 Launch
+                                        (ID)</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="launchAnydesk('ip')">🚀 Launch
+                                        (IP)</button>
+                                </div>
                             </div>
                         </div>
 
