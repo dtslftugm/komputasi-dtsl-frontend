@@ -346,8 +346,26 @@ function openProcessModal(requestId) {
     // Server License Configuration (Sync from GAS)
     var serverLicenseContainer = document.getElementById('server-license-container');
     var serverConfigInput = document.getElementById('server-license-config');
+
+    // DEBUG: Cek isi request untuk troubleshoot info server
+    console.log("DEBUG [openProcessModal]:", {
+        id: req.requestId,
+        type: req.requestType,
+        needsServerInfo: req.needsServerInfo,
+        serverConfigString: req.serverConfigString,
+        computerUsername: req.computerUsername,
+        computerHostname: req.computerHostname
+    });
+
     if (serverLicenseContainer) {
-        if (req.needsServerInfo || req.serverConfigString || (req.computerUsername && req.computerHostname)) {
+        // Broad trigger: Show if rule says so, OR we have JOIN/Computer data, OR the Request Type contains "lisensi"
+        var rType = (req.requestType || "").toLowerCase();
+        var isServerType = rType.indexOf('lisensi') !== -1;
+
+        var shouldShow = req.needsServerInfo || req.serverConfigString || (req.computerUsername && req.computerHostname) || isServerType;
+        console.log("DEBUG [Server Visibility]:", { isServerType: isServerType, shouldShow: shouldShow });
+
+        if (shouldShow) {
             serverLicenseContainer.classList.remove('d-none');
             // Prioritize serverConfigString from backend (the JOIN column), fall back to manual concat if empty
             var configStr = req.serverConfigString || ("allow = " + (req.computerUsername || "") + "@" + (req.computerHostname || "") + " ");
