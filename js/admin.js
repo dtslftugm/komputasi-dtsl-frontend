@@ -290,6 +290,7 @@ function openProcessModal(requestId) {
     document.getElementById('modal-nama').textContent = req.nama || '-';
     document.getElementById('modal-nim').textContent = req.nim || '-';
     document.getElementById('modal-prodi').textContent = req.prodi || '-';
+    document.getElementById('modal-request-type').textContent = req.requestType || 'Standard';
     document.getElementById('modal-email').textContent = req.email || '-';
 
     var phoneLink = document.getElementById('modal-phone');
@@ -378,34 +379,39 @@ function openProcessModal(requestId) {
         }
     }
 
-    // Handle computer specs if already assigned or preferred
+    // Handle computer specs visibility (only if requested)
+    var isLaptopPribadi = (req.roomPreference || "").indexOf("Laptop Pribadi") !== -1;
     var computerToShow = req.preferredComputer;
-    if (computerToShow && computerToShow !== 'Auto Assign') {
+
+    if (!isLaptopPribadi || (computerToShow && computerToShow !== 'Auto Assign')) {
         specContainer.classList.remove('d-none');
-        document.getElementById('spec-name').textContent = computerToShow;
 
-        api.jsonpRequest('admin-get-computer-details', { computerName: computerToShow })
-            .then(function (res) {
-                if (res.success && res.data) {
-                    document.getElementById('spec-anydesk').textContent = res.data.anydeskId || '-';
-                    document.getElementById('spec-ip').textContent = res.data.ipAddress || '-';
-                    document.getElementById('spec-location').textContent = res.data.location || '-';
+        if (computerToShow && computerToShow !== 'Auto Assign') {
+            document.getElementById('spec-name').textContent = computerToShow;
+            api.jsonpRequest('admin-get-computer-details', { computerName: computerToShow })
+                .then(function (res) {
+                    if (res.success && res.data) {
+                        document.getElementById('spec-anydesk').textContent = res.data.anydeskId || '-';
+                        document.getElementById('spec-ip').textContent = res.data.ipAddress || '-';
+                        document.getElementById('spec-location').textContent = res.data.location || '-';
 
-                    // Update AnyDesk password if Ruang Penelitian
-                    if (req.roomPreference === 'Ruang Penelitian' && anydeskPasswordInput) {
-                        if (res.data.anydeskPassword) {
-                            anydeskPasswordInput.value = res.data.anydeskPassword;
+                        // Update AnyDesk password if Ruang Penelitian
+                        if (req.roomPreference === 'Ruang Penelitian' && anydeskPasswordInput) {
+                            if (res.data.anydeskPassword) {
+                                anydeskPasswordInput.value = res.data.anydeskPassword;
+                            }
                         }
                     }
-                }
-            });
+                });
+        } else {
+            // Even if Auto Assign, show the container so admin can manually pick
+            document.getElementById('spec-name').textContent = "Belum Dialokasikan";
+            document.getElementById('spec-anydesk').textContent = '-';
+            document.getElementById('spec-ip').textContent = '-';
+            document.getElementById('spec-location').textContent = '-';
+        }
     } else {
-        // Even if Auto Assign, show the container so admin can manually pick
-        specContainer.classList.remove('d-none');
-        document.getElementById('spec-name').textContent = "Belum Dialokasikan";
-        document.getElementById('spec-anydesk').textContent = '-';
-        document.getElementById('spec-ip').textContent = '-';
-        document.getElementById('spec-location').textContent = '-';
+        specContainer.classList.add('d-none');
     }
 
     processModalObj.show();
