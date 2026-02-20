@@ -285,12 +285,12 @@ function openProcessModal(requestId) {
     currentRequest = req;
     currentReassignedComputer = null;
 
-    // Set labels
+    // 1. Set Labels
     document.getElementById('modal-request-id').textContent = requestId;
     document.getElementById('modal-nama').textContent = req.nama || '-';
     document.getElementById('modal-nim').textContent = req.nim || '-';
     document.getElementById('modal-prodi').textContent = req.prodi || '-';
-    document.getElementById('modal-request-type').textContent = req.requestType || 'Standard';
+    document.getElementById('modal-request-type').textContent = req.requestType || '-';
     document.getElementById('modal-email').textContent = req.email || '-';
 
     var phoneLink = document.getElementById('modal-phone');
@@ -320,23 +320,27 @@ function openProcessModal(requestId) {
     var docLink = document.getElementById('modal-doc-link');
     if (docLink) docLink.href = req.fileUrl || '#';
 
-    // Reset inputs
+    // 2. Reset UI State & Inputs
     document.getElementById('admin-notes').value = '';
     var keyInput = document.getElementById('activation-key-input');
+    var anydeskPasswordInput = document.getElementById('anydesk-password-input');
     if (keyInput) keyInput.value = '';
+    if (anydeskPasswordInput) anydeskPasswordInput.value = '';
 
     // Visibility management
     var keyContainer = document.getElementById('activation-key-container');
     var anydeskPasswordContainer = document.getElementById('anydesk-password-container');
-    var anydeskPasswordInput = document.getElementById('anydesk-password-input');
     var specContainer = document.getElementById('computer-specs-container');
+    var serverLicenseContainer = document.getElementById('server-license-container');
     var reallocateSelector = document.getElementById('reallocate-selector');
     var specDetails = document.getElementById('spec-details-box');
     var winUserContainer = document.getElementById('check-win-user-container');
 
+    // Default: Hide all optional sections
     if (keyContainer) keyContainer.classList.add('d-none');
     if (anydeskPasswordContainer) anydeskPasswordContainer.classList.add('d-none');
     if (specContainer) specContainer.classList.add('d-none');
+    if (serverLicenseContainer) serverLicenseContainer.classList.add('d-none');
     if (reallocateSelector) reallocateSelector.classList.add('d-none');
     if (specDetails) specDetails.classList.remove('d-none');
     document.getElementById('reallocate-btn').innerText = "🔄 Change";
@@ -346,44 +350,55 @@ function openProcessModal(requestId) {
         document.getElementById('id-check-win-user').checked = false;
     }
 
-    // Determine default expiration date
+    // 3. Logic-based Visibility & Content
+
+    // Default expiration date
     var daysToAdd = (req.roomPreference === 'Ruang Penelitian') ? 14 : 30;
     var expDate = new Date();
     expDate.setDate(expDate.getDate() + daysToAdd);
     document.getElementById('expiration-date-input').value = expDate.toISOString().split('T')[0];
 
-    // Activation Key Visibility
+    // Activation Key / Borrow License (Clean labeling like GAS)
     if (req.needsKey || req.requestType === 'Borrow License') {
-        if (keyContainer) keyContainer.classList.remove('d-none');
-    }
-
-    // AnyDesk Pass Visibility (Ruang Penelitian)
-    if (req.roomPreference === 'Ruang Penelitian') {
-        if (anydeskPasswordContainer) anydeskPasswordContainer.classList.remove('d-none');
-        updateAnydeskPasswordUI(); // Initial calculate
-    }
-
-    // Server License Configuration (STRICT VISIBILITY)
-    var serverLicenseContainer = document.getElementById('server-license-container');
-    var serverConfigInput = document.getElementById('server-license-config');
-
-    if (serverLicenseContainer) {
-        // ONLY show if backend explicitly says needsServerInfo, OR the request type is 'Akses Lisensi Server'
-        var isServerType = (req.requestType || "") === 'Akses Lisensi Server';
-        if (req.needsServerInfo || isServerType) {
-            serverLicenseContainer.classList.remove('d-none');
-            var configStr = req.serverConfigString || ("allow = " + (req.computerUsername || "") + "@" + (req.computerHostname || "") + " ");
-            if (serverConfigInput) serverConfigInput.value = configStr;
-        } else {
-            serverLicenseContainer.classList.add('d-none');
+        if (keyContainer) {
+            keyContainer.classList.remove('d-none');
+            var label = document.getElementById('activation-key-label');
+            if (label) {
+                if (req.software && req.software.toLowerCase().includes('vissim')) {
+                    label.textContent = "Borrow License / Activation Key";
+                    if (keyInput) keyInput.placeholder = "Enter generated borrow key...";
+                } else {
+                    label.textContent = (req.requestType === 'Borrow License') ? "Activation Key (Manual)" : "License Key / Code";
+                    if (keyInput) keyInput.placeholder = "Enter key from vendor...";
+                }
+            }
         }
     }
 
-    // Handle computer specs visibility (only if requested)
+    // AnyDesk (Only for Research Room)
+    if (req.roomPreference === 'Ruang Penelitian') {
+        if (anydeskPasswordContainer) anydeskPasswordContainer.classList.remove('d-none');
+        updateAnydeskPasswordUI();
+    }
+
+    // Server License Configuration
+    if (serverLicenseContainer) {
+        var isServerType = (req.requestType || "") === 'Akses Lisensi Server';
+        // Construct config even if backend JOIN is empty, if we have the component data
+        if (req.needsServerInfo || isServerType || (req.computerUsername && req.computerHostname)) {
+            serverLicenseContainer.classList.remove('d-none');
+            var configStr = req.serverConfigString || ("allow = " + (req.computerUsername || "") + "@" + (req.computerHostname || "") + " ");
+            var serverConfigInput = document.getElementById('server-license-config');
+            if (serverConfigInput) serverConfigInput.value = configStr;
+        }
+    }
+
+    // Computer Specs (Visibility based on Request Type & Preference)
     var isLaptopPribadi = (req.roomPreference || "").indexOf("Laptop Pribadi") !== -1;
+    var isBorrowLicense = (req.requestType || "").indexOf("Borrow License") !== -1;
     var computerToShow = req.preferredComputer;
 
-    if (!isLaptopPribadi || (computerToShow && computerToShow !== 'Auto Assign')) {
+    if ((!isLaptopPribadi && !isBorrowLicense) || (computerToShow && computerToShow !== 'Auto Assign')) {
         specContainer.classList.remove('d-none');
 
         if (computerToShow && computerToShow !== 'Auto Assign') {
@@ -395,23 +410,22 @@ function openProcessModal(requestId) {
                         document.getElementById('spec-ip').textContent = res.data.ipAddress || '-';
                         document.getElementById('spec-location').textContent = res.data.location || '-';
 
-                        // Update AnyDesk password if Ruang Penelitian
                         if (req.roomPreference === 'Ruang Penelitian' && anydeskPasswordInput) {
-                            if (res.data.anydeskPassword) {
-                                anydeskPasswordInput.value = res.data.anydeskPassword;
-                            }
+                            if (res.data.anydeskPassword) anydeskPasswordInput.value = res.data.anydeskPassword;
                         }
                     }
                 });
         } else {
-            // Even if Auto Assign, show the container so admin can manually pick
             document.getElementById('spec-name').textContent = "Belum Dialokasikan";
             document.getElementById('spec-anydesk').textContent = '-';
             document.getElementById('spec-ip').textContent = '-';
             document.getElementById('spec-location').textContent = '-';
         }
-    } else {
-        specContainer.classList.add('d-none');
+    }
+
+    // Show Windows User check only for Computer access
+    if (winUserContainer && !isLaptopPribadi && !isBorrowLicense) {
+        winUserContainer.classList.remove('d-none');
     }
 
     processModalObj.show();
