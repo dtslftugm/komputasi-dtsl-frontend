@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', function () {
             setupFormHandlers();
             setupUploadMethodToggle();
             setupComputerToggle();
+            setupDateRestrictions();
 
             // Attach event listener for software change
             $('#software').on('change', handleSoftwareChange);
@@ -66,6 +67,42 @@ document.addEventListener('DOMContentLoaded', function () {
             ui.error('Gagal memuat data: ' + errorMsg + '\n\nSilakan refresh halaman atau coba browser lain.', 'Koneksi Error');
         });
 });
+
+function setupDateRestrictions() {
+    var today = new Date();
+    var yyyy = today.getFullYear();
+    var mm = String(today.getMonth() + 1).padStart(2, '0');
+    var dd = String(today.getDate()).padStart(2, '0');
+    var todayStr = yyyy + '-' + mm + '-' + dd;
+
+    // Calculate Max Date for Start Date (H+7)
+    var maxDate = new Date();
+    maxDate.setDate(today.getDate() + 7);
+    var maxYyyy = maxDate.getFullYear();
+    var maxMm = String(maxDate.getMonth() + 1).padStart(2, '0');
+    var maxDd = String(maxDate.getDate()).padStart(2, '0');
+    var maxDateStr = maxYyyy + '-' + maxMm + '-' + maxDd;
+
+    var mulaiEl = document.getElementById('mulai');
+    var akhirEl = document.getElementById('akhir');
+
+    if (mulaiEl) {
+        mulaiEl.setAttribute('min', todayStr);
+        mulaiEl.setAttribute('max', maxDateStr);
+    }
+    if (akhirEl) akhirEl.setAttribute('min', todayStr);
+
+    // Ensure akhir min date dynamically updates based on mulai date
+    if (mulaiEl && akhirEl) {
+        mulaiEl.addEventListener('change', function () {
+            var selectedStart = this.value || todayStr;
+            akhirEl.setAttribute('min', selectedStart);
+            if (akhirEl.value && akhirEl.value < selectedStart) {
+                akhirEl.value = selectedStart;
+            }
+        });
+    }
+}
 
 // ===== BRANDING =====
 function setupBranding() {
@@ -913,11 +950,21 @@ function validateFormData(data) {
     // Date Validation (ES5)
     var today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    var maxStartDate = new Date();
+    maxStartDate.setDate(today.getDate() + 7);
+    maxStartDate.setHours(23, 59, 59, 999);
+
     var selectedDate = new Date(data.mulaiPemakaian);
     selectedDate.setHours(0, 0, 0, 0);
 
     if (selectedDate < today) {
         ui.warning('Tanggal mulai tidak boleh di masa lalu. Silakan pilih tanggal hari ini atau yang akan datang.', 'Validasi Tanggal');
+        return false;
+    }
+
+    if (selectedDate > maxStartDate) {
+        ui.warning('Tanggal mulai maksimal adalah 7 hari dari sekarang.', 'Validasi Tanggal');
         return false;
     }
 
