@@ -187,13 +187,16 @@ var ui = {
         else if (type === 'danger') icon = '❌';
         else if (type === 'warning') icon = '⚠️';
 
+        var textColorClass = (type === 'warning') ? 'text-dark' : 'text-white';
+        var closeBtnClass = (type === 'warning') ? 'btn-close' : 'btn-close btn-close-white';
+
         var html =
-            '<div id="' + id + '" class="toast align-items-center text-white bg-' + (type || 'primary') + ' border-0 shadow-lg mb-2" role="alert" aria-live="assertive" aria-atomic="true">' +
+            '<div id="' + id + '" class="toast align-items-center ' + textColorClass + ' bg-' + (type || 'primary') + ' border-0 shadow-lg mb-2" role="alert" aria-live="assertive" aria-atomic="true">' +
             '  <div class="d-flex">' +
             '    <div class="toast-body">' +
             '      <span class="me-2">' + icon + '</span>' + message +
             '    </div>' +
-            '    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
+            '    <button type="button" class="' + closeBtnClass + ' me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
             '  </div>' +
             '</div>';
 

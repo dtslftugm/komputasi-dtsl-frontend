@@ -1,0 +1,138 @@
+describe('Skenario 1: Pengajuan Permohonan Baru', () => {
+    it('Akses Link Form dan Pengecekan Awal', () => {
+        // 1. Membuka alamat web app Anda
+        cy.visit('https://dtslftugm.github.io/komputasi/')
+
+        // 2. Cypress menunggu halaman selesai loading
+        cy.contains('Formulir Layanan Komputasi', { timeout: 15000 }).should('be.visible')
+
+        // 3. Mengisi input text (Contoh data dummy)
+        cy.contains('Nama').parent().find('input').type('Tester Otomatis Cypress')
+        cy.contains('NIM').parent().find('input').type('20/123456/TK/98765')
+        cy.contains('Email Address').parent().find('input').type('tester@mail.ugm.ac.id')
+
+        // 4. Memilih radio button "TA / Tesis / Disertasi"
+        cy.contains('TA / Tesis').click()
+
+        // 5. Mengisi No HP
+        cy.contains('No HP').parent().find('input').type('081234567890')
+
+        // 6. Menguji Skenario Non-UGM
+        // Asumsi Prodi menggunakan elemen <select>. Sesuaikan jika menggunakan UI kustom.
+        cy.get('#prodi').select('Non-UGM')
+
+        // Nama dosen pembimbing
+        cy.get('#dosenPembimbingManual').parent().find('input').type('Mr. Potato')
+
+        // Memastikan kolom "Nama Universitas" muncul dan bisa diisi
+        cy.contains('Nama Universitas').should('be.visible')
+        cy.contains('Nama Universitas').parent().find('input').type('Universitas Penguji Otomatis')
+
+        // 7. Mengisi Topik
+        cy.contains('Topik / Judul').parent().find('input').type('Pengujian Otomatis Layanan Komputasi')
+
+        // 8. Mengisi software
+        // Memilih Software menggunakan Select2
+        // Kita ketik nama software-nya, lalu simulasi tekan Enter
+        cy.get('.select2-search__field').type('AutoCAD 2025{enter}')
+
+        // 8. MENGUJI XSS PREVENTION (Nama Universitas)
+        // Kita hapus input sebelumnya, lalu masukkan script berbahaya
+        cy.contains('Nama Universitas').parent().find('input').clear().type("<script>alert('xss')</script>")
+        // (Penting: Saat Anda melihat dashboard admin nanti, pastikan teks ini hanya muncul sebagai tulisan biasa, bukan memunculkan popup peringatan)
+
+        // 9. MEMILIH KOMPUTER LAB
+        // Memilih radio button "Ya, menggunakan komputer lab"
+        cy.contains('Ya, saya menggunakan komputer di Lab').click()
+
+        // Memilih ruangan (Asumsi menggunakan dropdown, ganti index/teks sesuai opsi web Anda)
+        // Jika Cypress kesulitan menemukan elemennya, gunakan Selector Playground cy.get(...)
+        //cy.contains('Pilih Ruangan').parent().find('select').select('🔬 Ruang Penelitian (akses 14 hari, dapat diperpanjang, akses remote 24 jam)', { force: true })
+
+        // 9.5 PEMILIHAN TANGGAL (Mulai dan Akhir)
+        // Ingat: Cypress membutuhkan format YYYY-MM-DD untuk input bertipe 'date'
+
+        // Mengisi tanggal mulai (Contoh: 1 Maret 2026)
+        cy.get('#mulai').type('2026-03-01')
+
+        // Mengisi tanggal akhir (Contoh: 14 Maret 2026)
+        // Sesuaikan ID '#akhir' jika di web Anda menggunakan ID yang berbeda
+        cy.get('#akhir').type('2026-03-14')
+
+        // 10. MENGUJI VALIDASI UPLOAD FILE
+        // Memilih opsi metode lampiran 'Upload File'
+        cy.contains('📂 Upload File').click()
+
+        // -- SKENARIO A: Upload File Ekstensi Berbahaya (.exe) --
+
+        // 1. Masukkan file (Cukup gunakan force: true)
+        cy.get('input[type="file"]').selectFile({
+            contents: Cypress.Buffer.from('Ini isi file dummy'),
+            fileName: 'malware.exe',
+            mimeType: 'application/x-msdownload',
+        }, { force: true })
+
+        // 2. Jeda sejenak agar JavaScript form Anda memproses file tersebut
+        cy.wait(1000)
+
+        // 3. Paksa klik tombol Submit
+        cy.contains('Submit Permohonan').click({ force: true })
+
+        // 4. Tunggu toast peringatan muncul (Maksimal 10 detik)
+        cy.contains('Format file tidak didukung. Harap gunakan PDF atau Gambar (JPG/PNG).', { timeout: 10000 }).should('be.visible')
+
+        // === MENUTUP TOAST SEBELUMNYA ===
+        // Klik sembarang tempat atau klik tombol (X) pada toast agar hilang
+        // Jika di web Anda toast hilang sendiri setelah beberapa detik, Anda bisa pakai cy.wait(5000)
+        cy.get('body').click(0, 0) // Trik klik di pojok layar untuk menutup popup/toast
+
+        // -- SKENARIO B: Upload File Ukuran Melebihi Batas (> 3MB) --
+        const fileBesar = Cypress.Buffer.alloc(4 * 1024 * 1024, 'a')
+
+        // 1. Masukkan file raksasa (4MB)
+        cy.get('input[type="file"]').selectFile({
+            contents: fileBesar,
+            fileName: 'dokumen-raksasa.pdf',
+            mimeType: 'application/pdf',
+        }, { force: true })
+
+        // 2. Beri jeda agar sistem mengenali file baru
+        cy.wait(1000)
+
+        // 3. Paksa klik tombol Submit lagi
+        cy.contains('Submit Permohonan').click({ force: true })
+
+        // 4. Tunggu toast peringatan ukuran file muncul
+        // GANTI teks di bawah ini dengan pesan error asli di web Anda!
+        cy.contains('File terlalu besar (max 3MB)', { timeout: 10000 }).should('be.visible')
+
+        // === MENUTUP TOAST ERROR KEDUA SEBELUMNYA ===
+        cy.get('body').click(0, 0) // Trik klik di sembarang tempat agar toast/fokus hilang
+        cy.wait(1000) // Beri jeda sebentar agar animasi toast benar-benar hilang
+
+        // -- SKENARIO C: Upload File Valid (< 3MB, .pdf) --
+
+        // 1. Masukkan dokumen yang sah
+        cy.get('input[type="file"]').selectFile({
+            contents: Cypress.Buffer.from('Ini adalah isi dokumen surat syarat yang sah dan valid.'),
+            fileName: 'surat-syarat-valid.pdf',
+            mimeType: 'application/pdf',
+        }, { force: true })
+
+        // 2. Beri jeda sistem untuk membaca file valid ini
+        cy.wait(1000)
+
+        // 3. SUBMIT PERMOHONAN (Final)
+        cy.contains('Submit Permohonan').click({ force: true })
+
+        // 4. VALIDASI SUKSES (Menunggu hingga 15 detik untuk proses pengiriman ke server)
+        // Mencari judul modal "Berhasil!"
+        cy.contains('Berhasil!', { timeout: 15000 }).should('be.visible')
+        // Memastikan isi pesan sesuai
+        cy.contains('Permohonan berhasil dikirim!').should('be.visible')
+
+        // (Opsional) Memastikan tombol 'Buat Permohonan Baru' muncul
+        cy.contains('Buat Permohonan Baru').should('be.visible')
+
+    })
+})

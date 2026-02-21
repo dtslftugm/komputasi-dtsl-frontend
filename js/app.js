@@ -304,7 +304,7 @@ function setupSoftwareSelect() {
                     allowClear: true,
                     width: '100%',
                     dropdownParent: $('#software').parent()
-                });
+                }).on('change', handleSoftwareChange); // ADDED MISSING EVENT LISTENER
             }, 100);
         } else {
             console.warn('Software list missing in initialData');
@@ -440,6 +440,8 @@ function handleSoftwareChange() {
     } else {
         warningDiv.classList.add('d-none');
         Array.prototype.slice.call(roomSelect.options).forEach(function (opt) { opt.disabled = false; });
+        var needsComputerNo = document.getElementById('needsComputerNo');
+        if (needsComputerNo) needsComputerNo.disabled = false;
         document.getElementById('requestType').value = '';
     }
 }
