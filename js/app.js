@@ -280,8 +280,9 @@ function setupDosenDropdown() {
             dosenList.forEach(function (dosen) {
                 var opt = document.createElement('option');
                 if (typeof dosen === 'object' && dosen.nama && dosen.inisial) {
-                    opt.value = dosen.inisial;
-                    opt.textContent = dosen.nama;
+                    const fullName = dosen.nama || dosen.inisial;
+                    opt.value = fullName;
+                    opt.textContent = fullName;
                 } else {
                     opt.value = dosen;
                     opt.textContent = dosen;

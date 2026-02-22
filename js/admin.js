@@ -290,6 +290,25 @@ function openProcessModal(requestId) {
     document.getElementById('modal-nama').textContent = req.nama || '-';
     document.getElementById('modal-nim').textContent = req.nim || '-';
     document.getElementById('modal-prodi').textContent = req.prodi || '-';
+
+    var isNonUgm = req.prodi && req.prodi.indexOf('Non-UGM') === 0;
+    var univContainer = document.getElementById('universitas-container');
+    if (univContainer) univContainer.style.display = isNonUgm ? 'block' : 'none';
+    var univEl = document.getElementById('modal-universitas');
+    if (univEl) univEl.textContent = req.universitas || '-';
+
+    var dosenEl = document.getElementById('modal-dosen');
+    if (dosenEl) dosenEl.textContent = req.dosen || '-';
+
+    var topikEl = document.getElementById('modal-topik');
+    if (topikEl) topikEl.textContent = req.topik || '-';
+
+    var keperluanEl = document.getElementById('modal-keperluan');
+    if (keperluanEl) keperluanEl.textContent = req.keperluan || '-';
+
+    var catatanEl = document.getElementById('modal-catatan');
+    if (catatanEl) catatanEl.textContent = req.catatan || '-';
+
     document.getElementById('modal-request-type').textContent = req.requestType || '-';
     document.getElementById('modal-email').textContent = req.email || '-';
 

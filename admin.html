@@ -378,12 +378,31 @@
                 <div class="modal-body p-4">
                     <div class="row g-4">
                         <!-- Left Info -->
-                        <div class="col-md-5">
+                        <div class="col-md-7">
                             <h6 class="text-muted text-uppercase small fw-bold mb-3">Informasi Mahasiswa</h6>
                             <p class="mb-1 small"><strong>Nama:</strong> <span id="modal-nama"></span></p>
                             <p class="mb-1 small"><strong>NIM:</strong> <span id="modal-nim"></span></p>
                             <p class="mb-1 small"><strong>Prodi:</strong> <span id="modal-prodi"></span></p>
-                            <p class="mb-1 small"><strong>Tipe:</strong> <span id="modal-request-type"
+                            <p class="mb-1 small" id="universitas-container"><strong>Universitas:</strong> <span
+                                    id="modal-universitas"></span></p>
+                            <p class="mb-1 small"><strong>Dosen Pembimbing / Pengampu:</strong> <span
+                                    id="modal-dosen"></span></p>
+
+                            <div class="mb-1 small">
+                                <strong>Topik / Judul:</strong>
+                                <div id="modal-topik" class="p-2 border rounded bg-light mt-1"
+                                    style="min-height: 40px; word-break: break-word;"></div>
+                            </div>
+
+                            <p class="mb-1 small mt-2"><strong>Keperluan Penggunaan:</strong> <span
+                                    id="modal-keperluan"></span></p>
+                            <div class="mb-1 small mt-2">
+                                <strong>Catatan Tambahan:</strong>
+                                <div id="modal-catatan" class="p-2 border rounded bg-light mt-1 text-muted fst-italic"
+                                    style="min-height: 40px; word-break: break-word;"></div>
+                            </div>
+
+                            <p class="mb-1 mt-3 small"><strong>Tipe Request:</strong> <span id="modal-request-type"
                                     class="badge bg-primary-subtle text-primary border-0"></span></p>
                             <p class="mb-1 small"><strong>Email:</strong> <span id="modal-email"></span></p>
                             <p class="mb-4 small"><strong>Phone:</strong> <a id="modal-phone" href="#" target="_blank"
@@ -448,6 +467,7 @@
                                         onclick="toggleReallocate()">Batal</button>
                                 </div>
 
+
                                 <div id="spec-details-box">
                                     <p class="mb-1 small"><strong>Name:</strong> <span id="spec-name">-</span></p>
                                     <p class="mb-1 small"><strong>AnyDesk ID:</strong> <span id="spec-anydesk">-</span>
@@ -474,34 +494,38 @@
                         </div>
 
                         <!-- Right Workflow -->
-                        <div class="col-md-7 border-start ps-md-4">
-                            <h6 class="text-muted text-uppercase small fw-bold mb-3">Checklist Verifikasi</h6>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="check-doc">
-                                <label class="form-check-label small" for="check-doc">Masa berlaku dokumen
-                                    sesuai</label>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="check-vendor">
-                                <label class="form-check-label small" for="check-vendor">Input email ke dashboard
-                                    vendor</label>
-                            </div>
-                            <div class="form-check mb-2 d-none" id="check-win-user-container">
-                                <input class="form-check-input" type="checkbox" id="id-check-win-user">
-                                <label class="form-check-label small" for="id-check-win-user">Buat Windows User</label>
-                            </div>
+                        <div class="col-md-5 border-start ps-md-4 d-flex flex-column h-100">
 
-                            <label class="form-label mt-3 fw-bold small">Masa Berlaku (Expiration Date):</label>
+                            <label class="form-label fw-bold small">Masa Berlaku (Expiration Date):</label>
                             <input type="date" id="expiration-date-input" class="form-control mb-3">
 
                             <label class="form-label fw-bold small">Catatan Admin:</label>
-                            <textarea id="admin-notes" class="form-control mb-4" rows="3" placeholder="..."></textarea>
+                            <textarea id="admin-notes" class="form-control mb-4" rows="4" placeholder="..."></textarea>
 
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-danger flex-grow-1 rounded-pill fw-bold"
-                                    onclick="submitRejection()">Reject</button>
-                                <button class="btn btn-success flex-grow-1 rounded-pill fw-bold"
-                                    onclick="submitApproval()">Grant</button>
+                            <div class="mt-auto">
+                                <h6 class="text-muted text-uppercase small fw-bold mb-3">Checklist Verifikasi</h6>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="check-doc">
+                                    <label class="form-check-label small" for="check-doc">Masa berlaku dokumen
+                                        sesuai</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="check-vendor">
+                                    <label class="form-check-label small" for="check-vendor">Input email ke dashboard
+                                        vendor</label>
+                                </div>
+                                <div class="form-check mb-4 d-none" id="check-win-user-container">
+                                    <input class="form-check-input" type="checkbox" id="id-check-win-user">
+                                    <label class="form-check-label small" for="id-check-win-user">Buat Windows
+                                        User</label>
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-danger flex-grow-1 rounded-pill fw-bold"
+                                        onclick="submitRejection()">Reject</button>
+                                    <button class="btn btn-success flex-grow-1 rounded-pill fw-bold"
+                                        onclick="submitApproval()">Grant</button>
+                                </div>
                             </div>
                         </div>
                     </div>
