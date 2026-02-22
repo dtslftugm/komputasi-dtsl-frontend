@@ -413,14 +413,18 @@ function openProcessModal(requestId) {
     }
 
     // Computer Specs (Visibility based on Request Type & Preference)
-    var isLaptopPribadi = (req.roomPreference || "").indexOf("Laptop Pribadi") !== -1;
-    var isBorrowLicense = (req.requestType || "").indexOf("Borrow License") !== -1;
-    var computerToShow = req.preferredComputer;
+    var reqType = req.requestType || "";
+    var isLaptopPribadi = (req.roomPreference || "").toLowerCase().indexOf("laptop pribadi") !== -1;
+    var isPureLicense = reqType.indexOf("Borrow License") !== -1 || reqType.indexOf("Cloud License") !== -1 || reqType.indexOf("Akses Lisensi Server") !== -1;
+    var noComputerNeeded = isLaptopPribadi || isPureLicense;
 
-    if ((!isLaptopPribadi && !isBorrowLicense) || (computerToShow && computerToShow !== 'Auto Assign')) {
+    var computerToShow = req.preferredComputer;
+    var hasValidComputer = computerToShow && computerToShow !== 'Auto Assign' && computerToShow !== 'Belum Dialokasikan';
+
+    if (hasValidComputer || !noComputerNeeded) {
         specContainer.classList.remove('d-none');
 
-        if (computerToShow && computerToShow !== 'Auto Assign') {
+        if (hasValidComputer) {
             document.getElementById('spec-name').textContent = computerToShow;
             api.jsonpRequest('admin-get-computer-details', { computerName: computerToShow })
                 .then(function (res) {
@@ -443,7 +447,7 @@ function openProcessModal(requestId) {
     }
 
     // Show Windows User check only for Computer access
-    if (winUserContainer && !isLaptopPribadi && !isBorrowLicense) {
+    if (winUserContainer && !noComputerNeeded) {
         winUserContainer.classList.remove('d-none');
     }
 
